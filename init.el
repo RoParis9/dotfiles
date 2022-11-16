@@ -1,71 +1,85 @@
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(tree-sitte-langs tree-sitter rainbow-mode evil rainbow-delimiters git-gutter typescript-mode rjsx-mode yaml-mode json-mode ivy yasnippet centaur-tabs dap-mode flycheck lsp-ui lsp-mode projectile dap-node dap-java lsp-node helm beacon treemacs-icons-dired treemacs-magit company treemacs-all-the-icons magit magin vterm dashboard treemacs neotree auto-complete autocomplete all-the-icons doom-modeline doom-themes which-key use-package)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+;; Remove Welcome Screen
+  (setq inhibit-startup-message t)
 
+  ;; Remove Menus and Scroll Bar
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (scroll-bar-mode -1)
 
-;;Remove Welcome Screen
-(setq inhibit-startup-message t)
+  ;;show recent files
+  (recentf-mode 1)
 
-;;Remove Menus and Scroll Bar
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(scroll-bar-mode -1)
+  ;;remember cursor place
+  (save-place-mode 1)
 
-;;show recent files
-(recentf-mode 1)
+  ;; instead of yes or no i want y/n
+  (defalias 'yes-or-no-p 'y-or-n-p)
 
-;;remember cursor place
-(save-place-mode 1)
-
-;; instead of yes or no i want y/n
-(defalias 'yes-or-no-p 'y-or-n-p)
-
-;;auto save
-(setq make-backup-files nil
+  ;;auto save
+  (setq make-backup-files nil
       auto-save-default t)
 
-;;Highlight current line
-(global-hl-line-mode 1)
+  ;;Highlight current line
+  (global-hl-line-mode 1)
 
-;;save backup directory
-(setq backup-directory-alist '(("." . "~/.saves")))
+  ;;save backup directory
+  (setq backup-directory-alist '(("." . "~/.saves")))
 
-;;delete selected words
-(delete-selection-mode 1)
+  ;;delete selected words
+  (delete-selection-mode 1)
 
-;;Line numbers
-(global-display-line-numbers-mode 'relative)
-(setq display-line-numbers-type 'relative)
+  ;;Line numbers
+  (global-display-line-numbers-mode 'relative)
+  (setq display-line-numbers-type 'relative)
 
-;;highlight parenteses
-(show-paren-mode 1)
+  (dolist (mode '(org-mode-hook
+		  term-mode-hook
+		  shell-mode-hook
+			treemacs-mode-hook
+			eshell-mode-hook
+			vterm-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-;;font size
-(set-face-attribute
- 'default
- nil
- :height 160
- :family "Fira Code"
- :weight 'medium
- :width 'normal)
+  ;;highlight parenteses
+  (show-paren-mode 1)
+
+  ;;font size
+  (set-face-attribute
+   'default
+   nil
+   :height 160
+   :family "Fira Code"
+   :weight 'medium
+   :width 'normal)
+
+ (add-hook 'js-mode-hook #'lsp)
+
+(with-eval-after-load 'js
+  (define-key js-mode-map (kbd "M-.") nil))
+
+(global-set-key (kbd "C-c p") 'projectile-find-file)
+
+(setq gc-cons-threshold (* 100 1024 1024)
+      read-process-output-max (* 1024 1024)
+      company-idle-delay 0.0
+      company-minimum-prefix-length 1
+      create-lockfiles nil);;lockfiles will kill npm with node
+
+(with-eval-after-load 'lsp-mode
+  (require 'dap-chrome)
+  (setq lsp-modeline-diagnostics-enable t)
+  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
+  (yas-global-mode))
 
 ;;Packages
 (require 'package)
 (setq package-enable-at-startup nil);;turn of startup packages
 
-(add-to-list 'package-archives '(("melpa" . "https://melpa.org/packages")
-                                 ("org" . "https://orgmode.org/elpa")
-                                 ("elpa" . "https://elpa.gnu.org/packages/")))
+(setq package-archives
+      '(("melpa" . "https://melpa.org/packages/")
+	("org" . "https://orgmode.org/elpa/")
+	("elpa" . "https://elpa.gnu.org/packages/")
+	("nongnu" . "https://elpa.nongnu.org/nongnu/")))
 
 (package-initialize);;start the packages
 
@@ -73,7 +87,6 @@
   (package-refresh-contents)
   (package-install 'use-package))
 
-;;show keys
 (use-package which-key
   :ensure t
   :config (which-key-mode))
@@ -82,31 +95,28 @@
 (use-package doom-themes
   :ensure t
   :config
-  (load-theme 'doom-gruvbox t))
+  (load-theme 'doom-material-dark t))
 
 ;;mode line
 (use-package doom-modeline
   :ensure t
   :hook (after-init . doom-modeline-mode))
 
+(use-package all-the-icons
+  :ensure t)
+
 (use-package rainbow-delimiters
   :ensure t
   :hook
   (prog-mode . rainbow-delimiters-mode))
 
-;;show icons
-(use-package all-the-icons
-  :ensure t)
-
-;;git plugin
-(use-package git-gutter
-  :ensure t)
-(global-git-gutter-mode +1)
-
-;;highlight cursor
+;;Cursor Highlight
 (use-package beacon
   :ensure t)
+
 (beacon-mode 1)
+
+(setq doom-themes-treemacs-theme "doom-material-dark")
 
 ;; auto complete
 (use-package company
@@ -125,12 +135,12 @@
   :ensure t
   :config
   (setq centaur-tabs-set-bar 'over
-        centaur-tabs-set-icons t
-        centaur-tabs-style "alternate"
-        centaur-tabs-gray-out-icons 'buffer
-        centaur-tabs-height 24
-        centaur-tabs-set-modified-marker t
-        centaur-tabs-modifier-marker ".")
+	centaur-tabs-set-icons t
+	centaur-tabs-style "alternate"
+	centaur-tabs-gray-out-icons 'buffer
+	centaur-tabs-height 24
+	centaur-tabs-set-modified-marker t
+	centaur-tabs-modifier-marker ".")
   (centaur-tabs-mode t))
 
 ;;file tree
@@ -160,12 +170,6 @@
   :after (treemacs magit)
   :ensure t)
 
-(use-package neotree
-  :ensure t)
-
-;;setting the theme 
-(setq doom-themes-treemacs-theme "doom-material-dark")
-
 ;;terminal
 (use-package vterm
   :ensure t
@@ -175,19 +179,15 @@
   (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
   (setq vterm-max-scrollback 10000))
 
-;;git 
+;;git integration
 (use-package magit
   :ensure t)
 
-(use-package helm
-  :ensure t
-  :config (helm-mode 1))
-
 (use-package projectile
-  :ensure t
-  :config
-  (define-key projectile-mode-map (kbd "C-x p") 'projectile-command-map)
-  (projectile-mode +1))
+ :ensure t
+ :config
+ (define-key projectile-mode-map (kbd "C-x p") 'projectile-command-map)
+ (projectile-mode +1))
 
 ;;emacs dashboard
 (use-package dashboard
@@ -201,13 +201,12 @@
     (setq dashboard-set-heading-icons t)
     (setq dashboard-startup-banner 'logo)
     (setq dashboard-items '((recents  . 5)
-                        (bookmarks . 5)
-                        (projects . 5)
-                        (agenda . 5)))
+			(bookmarks . 5)
+			(projects . 5)
+			(agenda . 5)))
     )
   :config
   (dashboard-setup-startup-hook))
-
 
 (use-package lsp-mode
   :ensure t
@@ -215,92 +214,79 @@
   (setq lsp-headerline-breadcrumb-enable nil))
 
 (use-package lsp-ui :ensure t)
+(use-package lsp-treemacs :ensure t)
+(lsp-treemacs-sync-mode +1)
 
 (use-package dap-mode :ensure t)
 
 (use-package flycheck :ensure t)
 
-(use-package yasnippet :ensure t)
+(use-package yasnippet
+  :ensure t)
 
-(use-package dash :ensure t)
+(use-package json-mode
+  :ensure t)
 
-(use-package ivy
-  :diminish
-  :bind (("C-s" . swiper)
-         :map ivy-minibuffer-map
-         ("TAB" . ivy-alt-done)
-         ("C-l" . ivy-alt-done)
-         ("C-j" . ivy-next-line)
-         ("C-k" . ivy-previous-line)
-         :map ivy-switch-buffer-map
-         ("C-k" . ivy-previous-line)
-         ("C-l" . ivy-done)
-         ("C-d" . ivy-switch-buffer-kill)
-         :map ivy-reverse-i-search-map
-         ("C-k" . ivy-previous-line)
-         ("C-d" . ivy-reverse-i-search-kill))
-  :config
-  (ivy-mode 1))
+(use-package yaml-mode
+  :ensure t)
 
-(use-package json-mode :ensure t)
-
-(use-package yaml-mode :ensure t)
-
-(use-package markdown-mode :ensure t)
+(use-package markdown-mode
+  :ensure t)
 
 (use-package rjsx-mode
+ :ensure t
+ :config
+ (add-to-list 'auto-mode-alist '("components\\/.*\\.js\\'" . rjsx-mode))
+ (add-to-list 'auto-mode-alist '("pages\\/.*\\.js\\'" . rjsx-mode)))
+
+(use-package rainbow-mode
+  :ensure t)
+
+(use-package evil
   :ensure t
+  :init
+  (setq evil-want-keybinding nil)
   :config
-  (add-to-list 'auto-mode-alist '("components\\/.*\\.js\\'" . rjsx-mode))
-  (add-to-list 'auto-mode-alist '("pages\\/.*\\.js\\'" . rjsx-mode)))
-
-(use-package typescript-mode
-  :ensure t)
-
-(add-hook 'js-mode-hook #'lsp)
-
-(with-eval-after-load 'js
-  (define-key js-mode-map (kbd "M-.") nil))
-
-(global-set-key (kbd "C-c p") 'projectile-find-file)
-
-(setq gc-cons-threshold (* 100 1024 1024)
-      read-process-output-max (* 1024 1024)
-      company-idle-delay 0.0
-      company-minimum-prefix-length 1
-      create-lockfiles nil);;lockfiles will kill npm with node
-
-(with-eval-after-load 'lsp-mode
-  (require 'dap-chrome)
-  (setq lsp-modeline-diagnostics-enable t)
-  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration)
-  (yas-global-mode))
-
-(use-package lsp-treemacs
-  :ensure t)
+  (evil-mode)
+  (evil-set-undo-system 'undo-redo)
+  ;; Use visual line motions even outside visual-line-mode buffers
+  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+  (evil-set-initial-state 'message-buffer-mode 'normal)
+  (evil-set-initial-state 'dashboard-mode 'normal))
 
 (defun efs/org-mode-setup ()
   (org-indent-mode)
   (variable-pitch-mode 1)
-  (visual-line-mode 1))
+  (auto-fill-mode 0)
+  (visual-line-mode 1)
+  (setq evil-auto-indent nil))
 
-;; Org Mode Configuration ------------------------------------------------------
+(use-package org
+  :config
+  (setq org-ellipsis " ▾"))
+
+(defun efs/org-mode-visual-fill ()
+  (setq visual-fill-column-width 100
+	visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
 
 (defun efs/org-font-setup ()
   ;; Replace list hyphen with dot
   (font-lock-add-keywords 'org-mode
-                          '(("^ *\\([-]\\) "
-                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+			  '(("^ *\\([-]\\) "
+			     (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
 
   ;; Set faces for heading levels
   (dolist (face '((org-level-1 . 1.2)
-                  (org-level-2 . 1.1)
-                  (org-level-3 . 1.05)
-                  (org-level-4 . 1.0)
-                  (org-level-5 . 1.1)
-                  (org-level-6 . 1.1)
-                  (org-level-7 . 1.1)
-                  (org-level-8 . 1.1)))
+		  (org-level-2 . 1.1)
+		  (org-level-3 . 1.05)
+		  (org-level-4 . 1.0)
+		  (org-level-5 . 1.1)
+		  (org-level-6 . 1.1)
+		  (org-level-7 . 1.1)
+		  (org-level-8 . 1.1)))
     (set-face-attribute (car face) nil :font "Fira Mono" :weight 'regular :height (cdr face)))
 
   ;; Ensure that anything that should be fixed-pitch in Org files appears that way
@@ -312,49 +298,47 @@
   (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
   (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
 
-(use-package org
-  :hook (org-mode . efs/org-mode-setup)
-  :config
-  (setq org-ellipsis " ▾")
-  (efs/org-font-setup))
-
 (use-package org-bullets
+  :ensure t
   :after org
-  :hook (org-mode . org-bullets-mode)
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
   :custom
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
-(defun efs/org-mode-visual-fill ()
-  (setq visual-fill-column-width 100
-        visual-fill-column-center-text t)
-  (visual-fill-column-mode 1))
-
-(use-package visual-fill-column
-  :hook (org-mode . efs/org-mode-visual-fill))
-
-(use-package rainbow-mode
-  :ensure t)
-
-(when (fboundp 'windmove-default-keybindings)
-  (windmove-default-keybindings))
-
-(global-set-key (kbd "C-c <left>")  'windmove-left)
-(global-set-key (kbd "C-c <right>") 'windmove-right)
-(global-set-key (kbd "C-c <up>")    'windmove-up)
-(global-set-key (kbd "C-c <down>")  'windmove-down)
-
-(use-package evil
+(use-package smartparens
+  :ensure t
   :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  (setq evil-want-C-u-scroll t)
-  (setq evil-want-C-i-jump nil)
-  :config
-  (evil-mode 1)
-  (evil-set-undo-system 'undo-redo) 
-;; Use visual line motions even outside of visual-line-mode buffers
-  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-  (evil-set-initial-state 'messages-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal))
+  (add-hook 'emacs-lisp-mode-hook #'smartparens-mode))
 
+;;;; Installing tree-sitter:
+(use-package tree-sitter
+  :config
+  (global-tree-sitter-mode)
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+
+(use-package tree-sitter-langs
+  :after tree-sitter)
+
+(use-package typescript-mode
+  :after tree-sitter
+  :config
+  (define-derived-mode typescriptreact-mode typescript-mode
+    "TypeScript TSX")
+  (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescriptreact-mode))
+  (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
+
+;; Automatically tangle our Emacs.org config file when we save it
+(defun efs/org-babel-tangle-config ()
+  (when (string-equal (buffer-file-name)
+                      (expand-file-name "~/Projects/Code/emacs-from-scratch/Emacs.org"))
+    ;; Dynamic scoping to the rescue
+    (let ((org-confirm-babel-evaluate nil))
+      (org-babel-tangle))))
+
+(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
+
+
+(use-package vertico
+  :init
+  (vertico-mode))

@@ -1,5 +1,4 @@
--- vim.g.tokyonight_style="storm"
-vim.g.material_style="darker"
+ vim.g.material_style="darker"
 
 vim.cmd [[
  try
@@ -9,3 +8,4 @@ vim.cmd [[
    set background=dark
  endtry
  ]]
+

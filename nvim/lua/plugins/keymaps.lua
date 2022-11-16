@@ -88,4 +88,3 @@ keymap("n", "<S-q>", "<cmd>Bdelete!<CR>", opts)
 -- Format
 keymap("n","<leader>f",":Format<cr>", opts)
 
-

@@ -29,4 +29,3 @@ configs.setup {
   },
 }
 }
-
