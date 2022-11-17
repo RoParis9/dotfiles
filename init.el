@@ -1,6 +1,7 @@
 ;; Remove Welcome Screen
   (setq inhibit-startup-message t)
 
+  
   ;; Remove Menus and Scroll Bar
   (tool-bar-mode -1)
   (menu-bar-mode -1)
@@ -88,8 +89,7 @@
   (package-install 'use-package))
 
 (use-package which-key
-  :ensure t
-  :config (which-key-mode))
+  :ensure t)
 
 ;;theme
 (use-package doom-themes
@@ -213,16 +213,34 @@
   :config
   (setq lsp-headerline-breadcrumb-enable nil))
 
-(use-package lsp-ui :ensure t)
-(use-package lsp-treemacs :ensure t)
+(use-package lsp-ui
+  :ensure t)
+
+(use-package lsp-treemacs
+  :ensure t)
+
 (lsp-treemacs-sync-mode +1)
 
-(use-package dap-mode :ensure t)
+(use-package dap-mode
+      :after lsp-mode
+      :config (dap-auto-configure-mode)
+      :ensure t)
 
-(use-package flycheck :ensure t)
+(use-package dap-java
+     :ensure t)
+
+(use-package flycheck
+   :ensure t
+   :init (global-flycheck-mode))
+
+(add-hook 'after-init-hook #'global-flycheck-mode)
 
 (use-package yasnippet
+  :config
+(yas-global-mode)
   :ensure t)
+(add-hook 'yas-minor-mode-hook (lambda ()
+				  (yas-activate-extra-mode 'fundamental-mode)))
 
 (use-package json-mode
   :ensure t)
@@ -239,8 +257,16 @@
  (add-to-list 'auto-mode-alist '("components\\/.*\\.js\\'" . rjsx-mode))
  (add-to-list 'auto-mode-alist '("pages\\/.*\\.js\\'" . rjsx-mode)))
 
+(use-package typescript-mode
+  :after tree-sitter
+  :config
+  (define-derived-mode typescriptreact-mode typescript-mode
+    "TypeScript TSX")
+  (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescriptreact-mode))
+  (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
+
 (use-package rainbow-mode
-  :ensure t)
+  :ensure )
 
 (use-package evil
   :ensure t
@@ -320,25 +346,21 @@
 (use-package tree-sitter-langs
   :after tree-sitter)
 
-(use-package typescript-mode
-  :after tree-sitter
-  :config
-  (define-derived-mode typescriptreact-mode typescript-mode
-    "TypeScript TSX")
-  (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescriptreact-mode))
-  (add-to-list 'tree-sitter-major-mode-language-alist '(typescriptreact-mode . tsx)))
+;; Automatically tangle our emacs.org config file when we save it
+(defun efs/org-babel-tangle-config()
+ (when (string-equal (buffer-file-name)
+		     (expand-file-name '~/Media/Notas/EmacsConfig.org'))
+ (let ((org-confirm-babel-evaluate nil))
+      (org-babel-tangle)))
+(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config))))
 
-;; Automatically tangle our Emacs.org config file when we save it
-(defun efs/org-babel-tangle-config ()
-  (when (string-equal (buffer-file-name)
-                      (expand-file-name "~/Projects/Code/emacs-from-scratch/Emacs.org"))
-    ;; Dynamic scoping to the rescue
-    (let ((org-confirm-babel-evaluate nil))
-      (org-babel-tangle))))
 
-(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
-
+(org-babel-do-load-languages
+  'org-babel-load-languages
+  '((emacs-list . t)))
 
 (use-package vertico
   :init
   (vertico-mode))
+
+(use-package hydra :ensure t)
