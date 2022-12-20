@@ -1,57 +1,72 @@
 ;; Remove Welcome Screen
-(setq inhibit-startup-message t)
+  (setq inhibit-startup-message t)
 
-(functionp 'module-load t)
-;; Remove Menus and Scroll Bar
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(scroll-bar-mode -1)
 
-;;show recent files
-(recentf-mode 1)
+  ;; Remove Menus and Scroll Bar
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (scroll-bar-mode -1)
 
-;;remember cursor place
-(save-place-mode 1)
+  ;;show recent files
+  (recentf-mode 1)
 
-;; instead of yes or no i want y/n
-(defalias 'yes-or-no-p 'y-or-n-p)
+  ;;
+  (add-to-list 'load-path "/home/rodrigo/.emacs.d/lisp")
 
-;;auto save
-(setq make-backup-files nil
-    auto-save-default t)
 
-;;Highlight current line
-(global-hl-line-mode 1)
+  ;;remember cursor place
+  (save-place-mode 1)
 
-;;save backup directory
-(setq backup-directory-alist '(("." . "~/.saves")))
+  ;; instead of yes or no i want y/n
+  (defalias 'yes-or-no-p 'y-or-n-p)
 
-;;delete selected words
-(delete-selection-mode 1)
+  ;;auto save
+  (setq make-backup-files nil
+      auto-save-default t)
 
-;;Line numbers
-(global-display-line-numbers-mode 'relative)
-(setq display-line-numbers-type 'relative)
+  ;;Highlight current line
+  (global-hl-line-mode 1)
 
-(dolist (mode '(org-mode-hook
-		term-mode-hook
-		shell-mode-hook
-		      treemacs-mode-hook
-		      eshell-mode-hook
-		      vterm-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+  ;;save backup directory
+  (setq backup-directory-alist '(("." . "~/.saves")))
 
-;;highlight parenteses
-(show-paren-mode 1)
+  ;;delete selected words
+  (delete-selection-mode 1)
 
-;;font size
-(set-face-attribute
- 'default
- nil
- :height 160
- :family "Fira Code"
- :weight 'medium
- :width 'normal)
+  ;;Line numbers
+  (global-display-line-numbers-mode 'relative)
+  (setq display-line-numbers-type 'relative)
+
+  (dolist (mode '(org-mode-hook
+		  term-mode-hook
+		  shell-mode-hook
+			treemacs-mode-hook
+			eshell-mode-hook
+			vterm-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+  ;;highlight parenteses
+  (show-paren-mode 1)
+
+  ;;font size
+  (set-face-attribute
+   'default
+   nil
+   :height 160
+   :family "Fira Code"
+   :weight 'medium
+   :width 'normal)
+
+
+  ;; Automatically tangle our Emacs.org config file when we save it
+(defun efs/org-babel-tangle-config ()
+  (when (string-equal (buffer-file-name)
+		      (expand-file-name "~/Projects/Code/emacs-from-scratch/Emacs.org"))
+    ;; Dynamic scoping to the rescue
+    (let ((org-confirm-babel-evaluate nil))
+      (org-babel-tangle))))
+
+(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
 
 ;;Packages
 (require 'package)
@@ -70,13 +85,14 @@
   (package-install 'use-package))
 
 (use-package which-key
-  :ensure t)
+  :config
+   (which-key-mode))
 
 ;;theme
 (use-package doom-themes
   :ensure t
   :config
-  (load-theme 'doom-material-dark t))
+  (load-theme 'doom-dracula t))
 
 ;;mode line
 (use-package doom-modeline
@@ -97,19 +113,7 @@
 
 (beacon-mode 1)
 
-(setq doom-themes-treemacs-theme "doom-material-dark")
-
-;; auto complete
-(use-package company
-  :ensure t
-  :hook ((emacs-lisp-mode . (lambda ()
-			      (setq-local company-backends '(company-elisp))))
-	 (emacs-lisp-mode . company-mode))
-  :config
-  (setq company-idle-delay 0.1
-	company-minimum-prefix-length 1)
-  :init
-  (add-hook 'after-init-hook 'global-company-mode))
+;;(setq doom-themes-treemacs-theme "doom-dracula")
 
 ;;tabs on top of the buffer
 (use-package centaur-tabs
@@ -204,6 +208,127 @@
   (evil-set-initial-state 'message-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal))
 
-(use-package vertico
+(use-package evil-nerd-commenter
+  :bind ("M-/" . evilnc-comment-or-uncomment-lines))
+
+(use-package helm
+  :ensure t
   :init
-  (vertico-mode))
+  (helm-mode))
+
+(use-package helm-lsp
+  :ensure t)
+
+(defun efs/lsp-mode-setup ()
+  (setq lsp-headerline-breadcrumb-segments '(path-up-to-project file symbols))
+  (lsp-headerline-breadcrumb-mode))
+
+(use-package lsp-mode
+   :ensure t
+   :commands (lsp lsp-deferred)
+   :init
+   (setq lsp-keymap-prefix "C-c l")
+   :config
+   (lsp-enable-which-key-integration t))
+
+
+(use-package lsp-ui
+  :hook (lsp-mode . lsp-ui-mode)
+  :custom
+  (lsp-ui-doc-position 'bottom))
+
+(use-package lsp-treemacs
+  :after lsp)
+
+(use-package typescript-mode
+  :mode "\\.ts\\'"
+  :hook (typescript-mode . lsp-deferred)
+  :config
+  (setq typescript-indent-level 2)
+  (require 'dap-mode)
+  (dap-node-setup))
+
+(use-package flycheck
+  :ensure t
+  :init (global-flycheck-mode))
+
+
+
+(use-package dap-mode)
+
+;; auto complete
+(use-package company
+  :ensure t
+  :hook ((emacs-lisp-mode . (lambda ()
+			      (setq-local company-backends '(company-elisp))))
+	 (emacs-lisp-mode . company-mode))
+
+  :hook (lsp-mode . company-mode)
+  :bind (:map company-active-map
+	 ("<tab>" . company-complete-selection))
+	(:map lsp-mode-map
+	 ("<tab>" . company-indent-or-complete-common))
+  :custom
+  (company-minimum-prefix-length 1)
+  (company-idle-delay 0.0)
+  :init
+  (add-hook 'after-init-hook 'global-company-mode))
+
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+(use-package smartparens
+   :ensure t
+   :init 
+   (add-hook 'emacs-lisp-mode-hook #'smartparens-mode))
+
+(defun efs/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (auto-fill-mode 0)
+  (visual-line-mode 1)
+  (setq evil-auto-indent nil))
+
+(use-package org
+  :config
+  (setq org-ellipsis " ▾"))
+
+(defun efs/org-mode-visual-fill ()
+  (setq visual-fill-column-width 100
+	visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+
+(defun efs/org-font-setup ()
+  ;; Replace list hyphen with dot
+  (font-lock-add-keywords 'org-mode
+			  '(("^ *\\([-]\\) "
+			     (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+
+  ;; Set faces for heading levels
+  (dolist (face '((org-level-1 . 1.2)
+		  (org-level-2 . 1.1)
+		  (org-level-3 . 1.05)
+		  (org-level-4 . 1.0)
+		  (org-level-5 . 1.1)
+		  (org-level-6 . 1.1)
+		  (org-level-7 . 1.1)
+		  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :font "Fira Mono" :weight 'regular :height (cdr face)))
+
+  ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil   :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-table nil   :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+
+(use-package org-bullets
+  :ensure t
+  :after org
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
