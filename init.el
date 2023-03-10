@@ -1,13 +1,32 @@
-;; Remove Welcome Screen
-  (setq inhibit-startup-message t)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(corfu consult marginalia smartparens vertico evil-nerd-commenter evil vterm dashboard which-key use-package rainbow-delimiters org-bullets doom-themes doom-modeline beacon all-the-icons)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
 
-  ;;Fixing the Scratch buffer
-  (setq initial-scratch-message "")
+;; The default is 800 kilobytes.  Measured in bytes.
+(setq gc-cons-threshold (* 50 1000 1000))
+
+
+;; Remove Welcome Screen
+(setq inhibit-startup-message t)
+
+;;Fixing the Scratch buffer
+(setq initial-scratch-message "")
 
 ;; Removes *scratch* from buffer after the mode has been set.
 (defun remove-scratch-buffer ()
   (if (get-buffer "*scratch*")
       (kill-buffer "*scratch*")))
+
 (add-hook 'after-change-major-mode-hook 'remove-scratch-buffer)
 
 ;; Removes *messages* from the buffer.
@@ -69,9 +88,9 @@
   (dolist (mode '(org-mode-hook
           term-mode-hook
           shell-mode-hook
-            treemacs-mode-hook
-            eshell-mode-hook
-            vterm-mode-hook))
+          treemacs-mode-hook
+          eshell-mode-hook
+          vterm-mode-hook))
     (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
   ;;highlight parenteses
@@ -86,15 +105,14 @@
    :weight 'medium
    :width 'normal)
 
-;;Packages
 (require 'package)
 (setq package-enable-at-startup nil);;turn of startup packages
 
 (setq package-archives
-  '(("melpa" . "https://melpa.org/packages/")
-	("org" . "https://orgmode.org/elpa/")
-	("elpa" . "https://elpa.gnu.org/packages/")
-	("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+   '(("melpa" . "https://melpa.org/packages/")
+	 ("org" . "https://orgmode.org/elpa/")
+	 ("elpa" . "https://elpa.gnu.org/packages/")
+	 ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
 
 (package-initialize);;start the packages
 
@@ -103,25 +121,27 @@
   (package-install 'use-package))
 
 (use-package which-key
+  :ensure t
   :config
-   (which-key-mode))
+  (which-key-mode))
 
 ;;theme
 (use-package doom-themes
   :ensure t
   :config
-  (load-theme 'doom-material-dark t))
+  (load-theme 'doom-monokai-pro t))
   ;;acario-light the best light theme
 
 ;;mode line
 (use-package doom-modeline
   :ensure t
-  :hook (after-init . doom-modeline-mode)
   :custom
   (doom-modeline-major-mode-icon t)
   (doom-modeline-major-mode-color-icon t)
   (doom-modeline-time-icon t)
-  (doom-modeline-lsp t))
+  (doom-modeline-lsp t)
+  :init
+  (doom-modeline-mode))
 
 
 (use-package all-the-icons
@@ -144,41 +164,26 @@
   :init
   (progn
     (setq dashboard-items '((recents .  1)
-			    (projects . 1)))
+                  (projects . 1)))
     (setq dashboard-banner-logo-title "You code for living kekw")
     (setq dashboard-set-file-icons t)
     (setq dashboard-set-heading-icons t)
     (setq dashboard-startup-banner 'logo)
     (setq dashboard-items '((recents  . 5)
-			(bookmarks . 5)
-			(projects . 5)
-			(agenda . 5)))
-    )
+              (bookmarks . 5)
+              (projects . 5)
+              (agenda . 5))))
   :config
   (dashboard-setup-startup-hook))
 
 ;;terminal
-   (use-package vterm
-     :ensure t
-     :commands vterm
-     :config
-     (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-     (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
-     (setq vterm-max-scrollback 10000))
-
-
-(use-package vterm-toggle
- :bind
- (("C-`"        . vterm-toggle)
-  :map vterm-mode-map
-  ("<C-return>" . vterm-toggle-insert-cd))
- :config
- (add-to-list 'display-buffer-alist
-    '("\*vterm\*"
-      (display-buffer-in-side-window)
-      (window-height . 0.3)
-      (side . bottom)
-      (slot . 0))))
+(use-package vterm
+  :ensure t
+  :commands vterm
+  :config
+  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
+  (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+  (setq vterm-max-scrollback 10000))
 
 (use-package evil
   :ensure t
@@ -198,13 +203,91 @@
   :bind
   ("C-c c" . evilnc-comment-or-uncomment-lines))
 
-(use-package helm
+(use-package smartparens
   :ensure t
   :init
-  (helm-mode))
+  (smartparens-global-mode))
 
-(use-package helm-lsp
-  :ensure t)
+;; Completions for Emacs
+(use-package vertico
+   :ensure t
+   :custom
+   (vertico-cycle t)
+   :init
+   (vertico-mode))
+
+;;Save Last Completion
+(use-package savehist
+   :ensure t
+   :init
+  (savehist-mode))
+
+;; Searching package
+(use-package consult
+  :ensure t
+  :bind(("C-s" . consult-line))
+  :custom
+  (completion-in-region-function #'consult-completion-in-region))
+
+;;you can search in any order 
+(use-package orderless
+   :ensure t
+   :init (setq completion-styles '(orderless)
+               completion-category-defaults nil
+               completion-category-override nil))
+
+;;all-the-icons on vertico
+(use-package all-the-icons-completion
+ :ensure t
+ :after (marginalia all-the-icons)
+ :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
+ :init
+ (all-the-icons-completion-mode))
+
+;;extra info on vertico
+(use-package marginalia
+   :ensure t
+   :custom
+   (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light nil))
+   :init
+   (marginalia-mode))
+
+;;completion
+(use-package corfu
+ ;; Optional customizations
+ :custom
+ (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+ (corfu-auto-prefix 2)
+ (corfu-auto t)                 ;; Enable auto completion
+ (corfu-auto-delay 0.0)
+ (corfu-separator ?\s)          ;; Orderless field separator
+;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
+;; (corfu-preview-current nil)    ;; Disable current candidate preview
+;; (corfu-preselect 'prompt)      ;; Preselect the prompt
+;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+ (corfu-scroll-margin 5)        ;; Use scroll margin
+ (tab-always-indent 'complete)
+
+;; Enable Corfu only for certain modes.
+;; :hook ((prog-mode . corfu-mode)
+;;        (shell-mode . corfu-mode)
+;;        (eshell-mode . corfu-mode))
+
+;; Recommended: Enable Corfu globally.
+;; This is recommended since Dabbrev can be used globally (M-/).
+;; See also `corfu-excluded-modes'.
+:init
+(global-corfu-mode)
+(corfu-history-mode))
+
+(use-package kind-icon
+  :ensure t
+  :after corfu
+  :custom
+  (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 (defun efs/org-mode-setup ()
   (org-indent-mode)
@@ -255,16 +338,24 @@
   :config
   (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
   :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●"))
+  :init (org-bullets-mode))
 
-(use-package pdf-tools
-  :ensure t
-  :config
-  (pdf-tools-install))
+(use-package magit
+   :ensure t)
 
-(use-package ace-window
+(use-package git-gutter
    :ensure t
-   :bind(("C-x o" . ace-window)))
+   :config
+   (global-git-gutter-mode 1))
+
+(use-package projectile
+   :ensure t
+   :config
+   (define-key projectile-mode-map (kbd "C-x p") 'projectile-command-map)
+   (projectile-mode +1))
+
+(global-set-key (kbd "C-c p") 'projectile-find-file)
 
 ;;tabs on top of the buffer
 (use-package centaur-tabs
@@ -280,63 +371,66 @@
   (centaur-tabs-mode t))
 
 (use-package treemacs
-       :ensure t
-       :bind
-       (:map global-map
-                ([f8] . treemacs)
-                ("C-<f8>" . treemacs-select-window))
-       :config
-       (setq treemacs-is-never-other-window t))
+     :ensure t
+     :bind
+     (:map global-map
+              ([f8] . treemacs)
+              ("C-<f8>" . treemacs-select-window))
+     :config
+     (setq treemacs-is-never-other-window t))
 
-  (use-package treemacs-evil
-    :after (treemacs evil)
-    :ensure t)
-
-  (use-package treemacs-projectile
-    :after (treemacs projectile)
-    :ensure t)
-
-  (use-package treemacs-icons-dired
-    :hook (dired-mode . treemacs-icons-dired-enable-once)
-    :ensure t)
-
-  (use-package treemacs-magit
-    :after (treemacs magit)
-    :ensure t)
-
-(use-package treemacs-all-the-icons)
-(treemacs-load-theme "all-the-icons")
-
-;;git integration
-(use-package magit
+(use-package treemacs-evil
+  :after (treemacs evil)
   :ensure t)
 
-(use-package git-gutter
-   :ensure t
-   :config
-   (global-git-gutter-mode 1))
+(use-package treemacs-projectile
+  :after (treemacs projectile)
+  :ensure t)
 
-(use-package projectile
-   :ensure t
-   :config
-   (define-key projectile-mode-map (kbd "C-x p") 'projectile-command-map)
-   (projectile-mode +1))
+(use-package treemacs-icons-dired
+  :hook (dired-mode . treemacs-icons-dired-enable-once)
+  :ensure t)
 
-(global-set-key (kbd "C-c p") 'projectile-find-file)
+(use-package treemacs-magit
+  :after (treemacs magit)
+  :ensure t)
+
+(use-package treemacs-all-the-icons
+   :ensure t
+   :after (treemacs all-the-icons)
+   :config
+   (treemacs-load-theme "all-the-icons"))
+
+(use-package dap-mode
+  :ensure t
+  :after lsp-mode
+  :hook ((lsp-mode . dap-mode)
+         (lsp-mode . dap-ui-mode))
+  :custom
+  (lsp-enable-dap-auto-configure t)
+  :config
+  (dap-ui-mode 1)
+  (dap-tooltip-mode 1))
 
 (use-package lsp-mode
      :ensure t
      :commands lsp
-     :hook((java-mode typescript-mode js2-mode web-mode rust-mode go-mode) . lsp)
-     :hook (lsp-mode . company-mode)
-     :bind (:map lsp-mode-map
-       ("TAB" . completion-at-point))
+     :hook((java-mode) . lsp
+           (lsp-mode . corfu-mode))
      :custom
+     (lsp-completion-provider :none)
      (lsp-prefer-flymake nil)
      (lsp-headerline-breadcrumb-enable t)
      :bind(:map lsp-mode-map ("C-c C-f" . lsp-format-buffer))
      :config
-     (lsp-enable-which-key-integration t))
+     (lsp-enable-which-key-integration t)
+     :init
+     (defun my/lsp-mode-setup-completion ()
+       (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+             '(orderless)))
+     :hook
+     (lsp-completion-mode . my/lsp-mode-setup-completion)
+
 
  (use-package lsp-ui
      :ensure t
@@ -344,6 +438,7 @@
      :custom
      ;;Sideline
      (lsp-ui-sideline-show-diagnostics nil)
+     (lsp-ui-sidelin-enable t)
      (lsp-ui-sideline-show-hover nil)
      (lsp-ui-sideline-delay 0)
      (lsp-ui-update-mode 'line)
@@ -361,61 +456,54 @@
    :ensure t
    :commands lsp-treemacs-erros-list)
 
-;;Performance
-(setq gc-cons-threshold (* 100 1024 1024)
-     read-process-output-max(* 1024 1024)
-     create-lock-files nil) ;;lock files will kill 'npm start'
+(defun rk/rustic-mode-hook ()
+  ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+  ;; save rust buffers that are not file visiting. Once
+  ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+  ;; no longer be necessary.
+  (when buffer-file-name
+    (setq-local buffer-save-without-query t))
+  (add-hook 'before-save-hook 'lsp-format-buffer nil t))
 
-(use-package yasnippet
-  :ensure t
-  :config (yas-global-mode)
-  (setq yas-snippet-dirs '/home/rodrigo/.emacs.d/snippets/'))
+(use-package rustic
+  :ensure
+  :bind (:map rustic-mode-map
+              ("M-j" . lsp-ui-imenu)
+              ("M-?" . lsp-find-references)
+              ("C-c C-c l" . flycheck-list-errors)
+              ("C-c C-c a" . lsp-execute-code-action)
+              ("C-c C-c r" . lsp-rename)
+              ("C-c C-c q" . lsp-workspace-restart)
+              ("C-c C-c Q" . lsp-workspace-shutdown)
+              ("C-c C-c s" . lsp-rust-analyzer-status))
+  :config
+  ;; uncomment for less flashiness
+  ;; (setq lsp-eldoc-hook nil)
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
 
-(use-package rjsx-mode
-:mode "\\.jsx\\'"
-:mode "components\\/.*\\.js\\'"
-:hook ((rjsx-mode . lsp)))
+  ;; comment to disable rustfmt on save
+  (setq rustic-format-on-save t)
+  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
 
-  (add-hook 'rjsx-mode-hook #'lsp)
-  (add-hook 'rjsx-mode-hook #'smartparens-mode)
-  (add-hook 'rjsx-mode-hook #'tree-sitter-mode)
+(use-package lsp-java
+   :ensure t
+   :hook (lsp-mode . lsp-enable-which-key-integratio) 
+   :config
+   (add-hook 'java-mode-hook 'lsp)
+   (add-hook 'java-mode-hok 'smartparens-mode)
+   (add-hook 'java-mode-hok 'flycheck-mode)
+   (require 'dap-java))
 
-(use-package rust-mode
-    :mode "\\.rs\\'"
-    :init (setq rust-format-on-save t))
+(use-package dockerfile-mode
+   :ensure t
+   :mode "Dockerfile\\'")
 
-(use-package cargo
-  :ensure t
-  :config (add-hook 'rust-mode-hook 'cargo-minor-mode))
-
-  (add-hook 'rust-mode-hook #'lsp)
-  (add-hook 'rust-mode-hook #'smartparens-mode)
-
-(defun my/setup-js-mode ()
-  (require 'dap-firefox)
-  (require 'dap-chrome)
-  (setq tab-width 2)
-  (when (require 'lsp-javascript nil t)
-    (lsp)))
-
-(use-package js2-mode
-  :after (lsp-mode dap-mode)
-  :mode "\\.js\\'"
-  :hook ((js2-mode . my/setup-js-mode)))
-
-(use-package typescript-mode
-  :after (lsp-mode dap-mode)
-  :mode ("\\.ts\\'" "\\.tsx\\'")
-  :hook ((typescript-mode . my/setup-js-mode)))
-
-  (use-package prettier-js
-    :hook ((js2-mode . prettier-js-mode)
-        (typescript-mode . prettier-js-mode))
-    :config
-    (setq prettier-js-show-errors nil))
-
-    (add-hook 'js-mode-hook #'lsp)
-    (add-hook 'typescript-mode-hook #'lsp)
+(use-package json-mode
+  :mode "\\.json\\'"
+  :hook ((json-mode . (lambda ()
+                     (when (require 'lsp-json nil t)
+                       (lsp))))))
 
 (use-package yaml-mode
   :mode "\\.yml\\'"
@@ -424,130 +512,25 @@
                         (when (require 'lsp-yaml nil t)
                           (lsp))))
          (yaml-mode . yaml-imenu-enable)))
-(use-package yaml-imenu
-  :after yaml-mode)
-
-(use-package dockerfile-mode
-   :ensure t
-   :mode "Dockerfile\\'")
-
-(use-package markdown-mode
-  :ensure t
-  :mode "\\.md\\'"
-  :config
-  (setq markdown-command "marked")
-  (defun dw/set-markdown-header-font-sizes ()
-    (dolist (face '((markdown-header-face-1 . 1.2)
-		    (markdown-header-face-2 . 1.1)
-		    (markdown-header-face-3 . 1.0)
-		    (markdown-header-face-4 . 1.0)
-		    (markdown-header-face-5 . 1.0)))
-  (set-face-attribute (car face) nil :weight 'normal :height (cdr face))))
-
-  (defun dw/markdown-mode-hook ()
-    (dw/set-markdown-header-font-sizes))
-
-  (add-hook 'markdown-mode-hook 'dw/markdown-mode-hook))
-
-(use-package lsp-java
-   :hook (lsp-mode . lsp-enable-which-key-integratio) 
-   :hook (add-hook 'java-mode-hook 'lsp)
-   :hook (add-hook 'java-mode-hok 'smartparens-mode)
-   :ensure t)
-
-(use-package json-mode
-  :mode "\\.json\\'"
-  :hook ((json-mode . (lambda ()
-                      (when (require 'lsp-json nil t)
-                        (lsp))))))
-
-(defun my-web-hook ()
- "Hooks for web mode."
-  (setq web-mode-enable-css-colorization t)
-  (setq web-mode-enable-autop-pairing t)
-  (setq web-mode-css-indent-offset 2)
-  (setq web-mode-enable-current-column-highlight t))
-
-(use-package web-mode
-   :ensure t)
-
-(add-hook 'web-mode-hook  'my-web-mode-hook)
-(add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
 
 (use-package tree-sitter
-   :ensure t)
+   :ensure t
+   :config
+   (global-tree-sitter-mode)
+   (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
 
 (use-package tree-sitter-langs
-   :ensure t)
+   :ensure t
+   :after tree-sitter)
 
 (global-tree-sitter-mode)
 (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-
-(use-package dap-mode
-   :ensure t
-   :after lsp-mode
-   :hook ((lsp-mode . dap-mode)
-          (lsp-mode . dap-ui-mode))
-   :custom
-   (lsp-enable-dap-auto-configure nil)
-   :config
-   (dap-auto-config-mode)
-   (dap-ui-mode 1)
-   (dap-tooltip-mode 1)
-   (require 'dap-node)
-   (dap-node-setup))
-
-(use-package company
-   :ensure t
-   :hook (prog-mode . company-mode)
-   :bind(:map company-active-map
-           ("<tab>" . company-complete-selection))
-        (:map lsp-mode-map
-           ("<tab>" . company-indent-or-complete-common))
-   :custom
-   (company-tooltip-aligh-annotation t)
-   (company-require-match nil)
-   (company-minimum-prefix-length 1)
-   (company-idle-delay 0.0)
-   :init (setq company-backends '(company-capf
-                               company-elisp
-                               company-cmake
-                               company-yasnippet
-                               company-files
-                               company-keywords
-                               company-etags
-                               company-gtags
-                               company-ispell)))
-
-(add-hook 'after-init-hook 'global-company-mode)
-
-(use-package company-box
-  :ensure t
-  :after company
-  :diminish company-box-mode
-  :custom
-  (company-box-show-single-candidate t)
-  (company-box-frame-behaviour 'point)
-  (company-box-icons-alist 'company-box-icons-all-the-icons)
-  (company-box-max-candidates 10)
-  (company-box-icon-right-margin 0.5)
-  :hook (company-mode . company-box-mode))
 
 (use-package rainbow-delimiters
   :ensure t
   :config
   (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
 
-(use-package smartparens
-   :ensure t
-   :config
-   (smartparens-global-mode t))
-
-(add-hook 'prog-mode 'smartparens-global-mode)
-
 (use-package flycheck
    :ensure t
    :commands (global-flycheck-mode))
-
-(use-package rainbowmode
-   :ensure t)
