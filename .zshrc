@@ -1,4 +1,3 @@
-
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
@@ -10,7 +9,7 @@ export ZSH="$HOME/.oh-my-zsh"
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="spaceship"
+ZSH_THEME=""
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -72,7 +71,7 @@ ZSH_THEME="spaceship"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git sudo docker web-search history zsh-autosuggestions zsh-syntax-highlighting asdf)
+plugins=(git sudo docker web-search history zsh-autosuggestions asdf zsh-syntax-highlighting )
 
 source $ZSH/oh-my-zsh.sh
 
@@ -103,4 +102,14 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 alias v="nvim"
+export PATH=/home/rodrigo/nodejs/bin:$PATH
+eval "$(starship init zsh)"
+export PATH=$HOME/.asdf/asdf.sh:$PATH 
+export PATH=/usr/local/go/bin:$PATH
+export PATH=$HOME/go/bin:$PATH
+export PATH=/usr/share/dotnet:$PATH
 
+
+
+# Load Angular CLI autocompletion.
+source <(ng completion script)

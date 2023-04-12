@@ -1,109 +1,109 @@
 (custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(corfu consult marginalia smartparens vertico evil-nerd-commenter evil vterm dashboard which-key use-package rainbow-delimiters org-bullets doom-themes doom-modeline beacon all-the-icons)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+   ;; custom-set-variables was added by Custom.
+   ;; If you edit it by hand, you could mess it up, so be careful.
+   ;; Your init file should contain only one such instance.
+   ;; If there is more than one, they won't work right.
+   '(package-selected-packages
+     '(corfu consult marginalia smartparens vertico evil-nerd-commenter evil vterm which-key use-package rainbow-delimiters org-bullets doom-themes doom-modeline beacon all-the-icons)))
+  (custom-set-faces
+   ;; custom-set-faces was added by Custom.
+   ;; If you edit it by hand, you could mess it up, so be careful.
+   ;; Your init file should contain only one such instance.
+   ;; If there is more than one, they won't work right.
+   )
 
-;; The default is 800 kilobytes.  Measured in bytes.
-(setq gc-cons-threshold (* 50 1000 1000))
+  ;; The default is 800 kilobytes.  Measured in bytes.
+  (setq gc-cons-threshold (* 50 1000 1000))
 
 
-;; Remove Welcome Screen
-(setq inhibit-startup-message t)
+  ;; Remove Welcome Screen
+  (setq inhibit-startup-message t)
 
-;;Fixing the Scratch buffer
-(setq initial-scratch-message "")
+  ;;Fixing the Scratch buffer
+  (setq initial-scratch-message "")
 
 ;; Removes *scratch* from buffer after the mode has been set.
-(defun remove-scratch-buffer ()
-  (if (get-buffer "*scratch*")
-      (kill-buffer "*scratch*")))
+  ;; (defun remove-scratch-buffer ()
+  ;;   (if (get-buffer "*scratch*")
+  ;;       (kill-buffer "*scratch*")))
 
-(add-hook 'after-change-major-mode-hook 'remove-scratch-buffer)
+  ;; (add-hook 'after-change-major-mode-hook 'remove-scratch-buffer)
 
-;; Removes *messages* from the buffer.
-(setq-default message-log-max nil)
-(kill-buffer "*Messages*")
+  ;; Removes *messages* from the buffer.
+  (setq-default message-log-max nil)
+  (kill-buffer "*Messages*")
 
-;; Removes *Completions* from buffer after you've opened a file.
-(add-hook 'minibuffer-exit-hook
-      '(lambda ()
-         (let ((buffer "*Completions*"))
-           (and (get-buffer buffer)
-                (kill-buffer buffer)))))
+  ;; Removes *Completions* from buffer after you've opened a file.
+  (add-hook 'minibuffer-exit-hook
+        '(lambda ()
+           (let ((buffer "*Completions*"))
+             (and (get-buffer buffer)
+                  (kill-buffer buffer)))))
 
-;; Don't show *Buffer list* when opening multiple files at the same time.
-(setq inhibit-startup-buffer-menu t)
+  ;; Don't show *Buffer list* when opening multiple files at the same time.
+  (setq inhibit-startup-buffer-menu t)
 
-;; Show only one active window when opening multiple files at the same time.
-(add-hook 'window-setup-hook 'delete-other-windows)
+  ;; Show only one active window when opening multiple files at the same time.
+  (add-hook 'window-setup-hook 'delete-other-windows)
 
 
-  ;; Remove Menus and Scroll Bar
-  (tool-bar-mode -1)
-  (menu-bar-mode -1)
-  (scroll-bar-mode -1)
+    ;; Remove Menus and Scroll Bar
+    (tool-bar-mode -1)
+    (menu-bar-mode -1)
+    (scroll-bar-mode -1)
 
-  ;;show recent files
-  (recentf-mode 1)
+    ;;show recent files
+    (recentf-mode 1)
 
-  ;;
-  (add-to-list 'load-path "/home/rodrigo/.emacs.d/lisp")
+    ;;
+    (add-to-list 'load-path "/home/rodrigo/.emacs.d/lisp")
 
-  (setq-default indent-tabs-mode nil)
-  (setq-default tab-width 4)
-  (setq indent-line-function 'insert-tab)
+    (setq-default indent-tabs-mode nil)
+    (setq-default tab-width 4)
+    (setq indent-line-function 'insert-tab)
 
-  ;;remember cursor place
-  (save-place-mode 1)
+    ;;remember cursor place
+    (save-place-mode 1)
 
-  ;; instead of yes or no i want y/n
-  (defalias 'yes-or-no-p 'y-or-n-p)
+    ;; instead of yes or no i want y/n
+    (defalias 'yes-or-no-p 'y-or-n-p)
 
-  ;;auto save
-  (setq make-backup-files nil
-      auto-save-default t)
+    ;;auto save
+    (setq make-backup-files nil
+        auto-save-default t)
 
-  ;;Highlight current line
-  (global-hl-line-mode 1)
+    ;;Highlight current line
+    (global-hl-line-mode 1)
 
-  ;;save backup directory
-  (setq backup-directory-alist '(("." . "~/.saves")))
+    ;;save backup directory
+    (setq backup-directory-alist '(("." . "~/.saves")))
 
-  ;;delete selected words
-  (delete-selection-mode 1)
+    ;;delete selected words
+    (delete-selection-mode 1)
 
-  ;;Line numbers
-  (global-display-line-numbers-mode 'relative)
-  (setq display-line-numbers-type 'relative)
+    ;;Line numbers
+    (global-display-line-numbers-mode 'relative)
+    (setq display-line-numbers-type 'relative)
 
-  (dolist (mode '(org-mode-hook
-          term-mode-hook
-          shell-mode-hook
-          treemacs-mode-hook
-          eshell-mode-hook
-          vterm-mode-hook))
-    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+    (dolist (mode '(org-mode-hook
+            term-mode-hook
+            shell-mode-hook
+            treemacs-mode-hook
+            eshell-mode-hook
+            vterm-mode-hook))
+      (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-  ;;highlight parenteses
-  (show-paren-mode 1)
+    ;;highlight parenteses
+    (show-paren-mode 1)
 
-  ;;font size
-  (set-face-attribute
-   'default
-   nil
-   :height 160
-   :family "Fira Code"
-   :weight 'medium
-   :width 'normal)
+    ;;font size
+    (set-face-attribute
+     'default
+     nil
+     :height 160
+     :family "Fira Code"
+     :weight 'medium
+     :width 'normal)
 
 (require 'package)
 (setq package-enable-at-startup nil);;turn of startup packages
@@ -125,11 +125,15 @@
   :config
   (which-key-mode))
 
+(add-to-list 'default-frame-alist '(alpha-background . 80))
+
+
 ;;theme
 (use-package doom-themes
   :ensure t
   :config
   (load-theme 'doom-monokai-pro t))
+
   ;;acario-light the best light theme
 
 ;;mode line
@@ -158,32 +162,28 @@
 
 (beacon-mode 1)
 
-;;emacs dashboard
-(use-package dashboard
-  :ensure t
-  :init
-  (progn
-    (setq dashboard-items '((recents .  1)
-                  (projects . 1)))
-    (setq dashboard-banner-logo-title "You code for living kekw")
-    (setq dashboard-set-file-icons t)
-    (setq dashboard-set-heading-icons t)
-    (setq dashboard-startup-banner 'logo)
-    (setq dashboard-items '((recents  . 5)
-              (bookmarks . 5)
-              (projects . 5)
-              (agenda . 5))))
-  :config
-  (dashboard-setup-startup-hook))
-
 ;;terminal
-(use-package vterm
-  :ensure t
-  :commands vterm
-  :config
-  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-  (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
-  (setq vterm-max-scrollback 10000))
+  (use-package vterm
+    :ensure t
+    :commands vterm
+    :config
+    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
+    (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+    (setq vterm-max-scrollback 10000))
+
+(use-package vterm-toggle
+   :ensure t
+   :bind
+   (("C-`"        . vterm-toggle)
+    :map vterm-mode-map
+    ("<C-return>" . vterm-toggle-insert-cd))
+   :config
+   (add-to-list 'display-buffer-alist
+      '("\*vterm\*"
+        (display-buffer-in-side-window)
+        (window-height . 0.3)
+        (side . bottom)
+        (slot . 0))))
 
 (use-package evil
   :ensure t
@@ -195,8 +195,7 @@
   ;; Use visual line motions even outside visual-line-mode buffers
   (evil-global-set-key 'motion "j" 'evil-next-visual-line)
   (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-  (evil-set-initial-state 'message-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal))
+  (evil-set-initial-state 'message-buffer-mode 'normal))
 
 (use-package evil-nerd-commenter
   :ensure t
@@ -225,16 +224,15 @@
 ;; Searching package
 (use-package consult
   :ensure t
-  :bind(("C-s" . consult-line))
+  :bind(("C-s" . consult-line)
+        ("C-c g" . consult-ripgrep))
   :custom
   (completion-in-region-function #'consult-completion-in-region))
 
 ;;you can search in any order 
 (use-package orderless
    :ensure t
-   :init (setq completion-styles '(orderless)
-               completion-category-defaults nil
-               completion-category-override nil))
+   :init (setq completion-styles '(orderless)))
 
 ;;all-the-icons on vertico
 (use-package all-the-icons-completion
@@ -254,6 +252,7 @@
 
 ;;completion
 (use-package corfu
+ :ensure t
  ;; Optional customizations
  :custom
  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -357,24 +356,11 @@
 
 (global-set-key (kbd "C-c p") 'projectile-find-file)
 
-;;tabs on top of the buffer
-(use-package centaur-tabs
-  :ensure t
-  :config
-  (setq centaur-tabs-set-bar 'over
-  centaur-tabs-set-icons t
-  centaur-tabs-style 'bar
-  centaur-tabs-gray-out-icons 'buffer
-  centaur-tabs-height 24
-  centaur-tabs-set-modified-marker t
-  centaur-tabs-modifier-marker ".")
-  (centaur-tabs-mode t))
-
 (use-package treemacs
      :ensure t
      :bind
      (:map global-map
-              ([f8] . treemacs)
+              ("<f8>" . treemacs)
               ("C-<f8>" . treemacs-select-window))
      :config
      (setq treemacs-is-never-other-window t))
@@ -415,10 +401,10 @@
 (use-package lsp-mode
      :ensure t
      :commands lsp
-     :hook((java-mode) . lsp
+     :hook((lsp-java . lsp)
            (lsp-mode . corfu-mode))
      :custom
-     (lsp-completion-provider :none)
+     (sp-completion-provider :none)
      (lsp-prefer-flymake nil)
      (lsp-headerline-breadcrumb-enable t)
      :bind(:map lsp-mode-map ("C-c C-f" . lsp-format-buffer))
@@ -429,8 +415,9 @@
        (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
              '(orderless)))
      :hook
-     (lsp-completion-mode . my/lsp-mode-setup-completion)
+     (lsp-completion-mode . my/lsp-mode-setup-completion))
 
+(add-hook 'prog-mode-hook #'lsp)
 
  (use-package lsp-ui
      :ensure t
@@ -488,12 +475,91 @@
 
 (use-package lsp-java
    :ensure t
-   :hook (lsp-mode . lsp-enable-which-key-integratio) 
    :config
    (add-hook 'java-mode-hook 'lsp)
-   (add-hook 'java-mode-hok 'smartparens-mode)
-   (add-hook 'java-mode-hok 'flycheck-mode)
+   (add-hook 'java-mode-hook 'smartparens-mode)
+   (add-hook 'java-mode-hook 'flycheck-mode)
    (require 'dap-java))
+
+(defun dw/set-js-indentation ()
+  (setq js-indent-level 2)
+  (setq evil-shift-width js-indent-level)
+  (setq-default tab-width 2))
+
+(use-package js2-mode
+  :ensure t
+  :mode "\\.jsx?\\'"
+  :config
+  ;; Use js2-mode for Node scripts
+  (add-to-list 'magic-mode-alist '("#!/usr/bin/env node" . js2-mode))
+
+  (add-to-list 'auto-mode-alist '("\\.js\\" . js2-mode))
+
+  ;; Don't use built-in syntax checking
+  (setq js2-mode-show-strict-warnings nil)
+
+  ;; Set up proper indentation in JavaScript and JSON files
+  (add-hook 'js2-mode-hook #'dw/set-js-indentation)
+  (add-hook 'json-mode-hook #'dw/set-js-indentation))
+
+(defun setup-tide-mode ()
+    (interactive)
+    (tide-setup)
+    (flycheck-mode +1)
+    (setq flycheck-check-syntax-automatically '(save mode-enabled))
+    (eldoc-mode +1)
+    (tide-hl-identifier-mode +1))
+
+  ;; formats the buffer before saving
+  (add-hook 'before-save-hook 'tide-format-before-save)
+
+  ;; if you use typescript-mode
+  (add-hook 'typescript-mode-hook #'setup-tide-mode)
+
+  (add-hook 'tsx-ts-mode-hook #'setup-tide-mode)
+
+(use-package tide
+  :ensure t
+  :after (js2-mode typescript-mode corfu flycheck)
+  :hook ((typescript-mode . tide-setup)
+         (typescript-mode . tide-hl-identifier-mode)
+         (before-save . tide-format-before-save)))
+
+    (use-package typescript-mode
+      :ensure t
+      :mode "\\.ts\\'"
+      :config
+      (setq typescript-indent-level 2))
+
+(use-package apheleia
+  :ensure t
+  :config
+  (apheleia-global-mode +1))
+
+(use-package prettier-js
+   :ensure t
+   :after (js2-mode)
+   :hook ((js2-mode . prettier-js-mode)
+          (typescript-mode . prettier-js-mode))
+  :config
+  (setq prettier-js-show-errors nil))
+
+(use-package emmet-mode
+  :ensure t)
+
+(use-package web-mode
+   :ensure t
+   :config
+   (setq web-mode-enable-auto-closing t)
+   (setq web-mode-enable-auto-identation t)
+   (setq web-mode-enable-auto-pairing t))
+
+(add-to-list 'auto-mode-alist '("\\.html\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
+
+(add-hook 'web-mode-hook 'emmet-mode)
+
+(add-hook 'web-mode-before-auto-complete-hooks 'corfu-mode-hook)
 
 (use-package dockerfile-mode
    :ensure t
@@ -506,12 +572,9 @@
                        (lsp))))))
 
 (use-package yaml-mode
+  :ensure t
   :mode "\\.yml\\'"
-  :mode "\\.yaml\\'"
-  :hook ((yaml-mode . (lambda ()
-                        (when (require 'lsp-yaml nil t)
-                          (lsp))))
-         (yaml-mode . yaml-imenu-enable)))
+  :mode "\\.yaml\\'")
 
 (use-package tree-sitter
    :ensure t
@@ -533,4 +596,20 @@
 
 (use-package flycheck
    :ensure t
+   :config
    :commands (global-flycheck-mode))
+
+(use-package yasnippet   
+   :ensure t
+   :config
+   (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
+   (yas-global-mode 1))
+
+(use-package quickrun
+  :ensure t)
+
+(use-package pdf-tools
+   :ensure t)
+
+(use-package rainbow-mode
+   :ensure t)

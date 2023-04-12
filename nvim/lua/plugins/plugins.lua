@@ -52,13 +52,8 @@ return packer.startup(function(use)
   use "kyazdani42/nvim-web-devicons" -- show icons on the file tree
   use "kyazdani42/nvim-tree.lua" --show files on the left
   
-  use {"akinsho/bufferline.nvim", tag = "v3.*", requires = "nvim-tree/nvim-web-devicons"}
   -- Colorschemes
-  use "lunarvim/colorschemes" -- A bunch of colorschemes you can try out
-  use "lunarvim/darkplus.nvim"
-  use "ghifarit53/tokyonight-vim"
   use "morhetz/gruvbox"
-  use "marko-cerovac/material.nvim"
 
   -- cmp plugins
   use "hrsh7th/nvim-cmp" -- The completion plugin
