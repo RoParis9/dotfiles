@@ -82,8 +82,8 @@
     (delete-selection-mode 1)
 
     ;;Line numbers
-    (global-display-line-numbers-mode 'relative)
-    (setq display-line-numbers-type 'relative)
+     (global-display-line-numbers-mode 'relative)
+     (setq display-line-numbers-type 'relative)
 
     (dolist (mode '(org-mode-hook
             term-mode-hook
@@ -125,14 +125,15 @@
   :config
   (which-key-mode))
 
-(add-to-list 'default-frame-alist '(alpha-background . 80))
+(add-to-list 'default-frame-alist '(alpha-background . 100))
+
 
 
 ;;theme
 (use-package doom-themes
   :ensure t
   :config
-  (load-theme 'doom-monokai-pro t))
+  (load-theme 'doom-material-dark t))
 
   ;;acario-light the best light theme
 
@@ -256,7 +257,7 @@
  ;; Optional customizations
  :custom
  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
- (corfu-auto-prefix 2)
+ (corfu-auto-prefix 1)
  (corfu-auto t)                 ;; Enable auto completion
  (corfu-auto-delay 0.0)
  (corfu-separator ?\s)          ;; Orderless field separator
@@ -424,11 +425,12 @@
      :commands (lsp-ui-mode)
      :custom
      ;;Sideline
-     (lsp-ui-sideline-show-diagnostics nil)
+     (lsp-ui-sideline-show-diagnostics t)
      (lsp-ui-sidelin-enable t)
-     (lsp-ui-sideline-show-hover nil)
+     (lsp-ui-sideline-show-hover t)
      (lsp-ui-sideline-delay 0)
      (lsp-ui-update-mode 'line)
+     (lsp-ui-peek-enable t)
      ;;Documentantion
      (lsp-ui-doc-enable t)
      (lsp-ui-doc-header t)
@@ -480,6 +482,25 @@
    (add-hook 'java-mode-hook 'smartparens-mode)
    (add-hook 'java-mode-hook 'flycheck-mode)
    (require 'dap-java))
+
+(use-package tuareg
+     :ensure t
+     :mode (("\\.ocamlinit\\'" . tuareg-mode)))
+
+  (use-package dune
+     :ensure t)
+
+  (use-package merlin
+     :ensure t
+     :config
+     (add-hook 'tuareg-mode-hook #'merlin-mode)
+     (add-hook 'merlin-mode-hook #'corfu-mode)
+     (setq merlin-error-after-save nil))
+
+(use-package flycheck-ocaml
+  :ensure t
+  :config
+  (flycheck-ocaml-setup))
 
 (defun dw/set-js-indentation ()
   (setq js-indent-level 2)
@@ -552,12 +573,15 @@
    :config
    (setq web-mode-enable-auto-closing t)
    (setq web-mode-enable-auto-identation t)
+   (setq web-mode-enable-auto-close t)
    (setq web-mode-enable-auto-pairing t))
 
 (add-to-list 'auto-mode-alist '("\\.html\\'" . web-mode))
 (add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
 
 (add-hook 'web-mode-hook 'emmet-mode)
+(add-hook 'web-mode-hook #'lsp)
+
 
 (add-hook 'web-mode-before-auto-complete-hooks 'corfu-mode-hook)
 
@@ -612,4 +636,7 @@
    :ensure t)
 
 (use-package rainbow-mode
+   :ensure t)
+
+(use-package restclient
    :ensure t)

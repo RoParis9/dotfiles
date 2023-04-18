@@ -113,3 +113,4 @@ export PATH=/usr/share/dotnet:$PATH
 
 # Load Angular CLI autocompletion.
 source <(ng completion script)
+export PATH="$PATH:$HOME/.config/composer/vendor/bin"
