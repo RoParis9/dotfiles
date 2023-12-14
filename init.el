@@ -20,7 +20,7 @@
  ;; Remove Welcome Screen
  (setq inhibit-startup-message t)
 
-	(setq custom-safe-themes t)
+(setq custom-safe-themes t)
 
 
  ;;Fixing the Scratch buffer
@@ -60,10 +60,10 @@
    ;;show recent files
    (recentf-mode 1)
 
-   ;;
    (add-to-list 'load-path "/home/rodrigo/.emacs.d/lisp")
 
-   (setq-default indent-tabs-mode t)
+  ;;autosave
+   ;;(setq-default indent-tabs-mode t)
    (setq-default tab-width 4)
    (setq indent-line-function 'insert-tab)
 
@@ -143,7 +143,6 @@
       (doom-themes-visual-bell-config)
       (doom-themes-treemacs-config)
       (load-theme 'doom-one-light))
-
 
       ;;Dark Themes that i like: dracula | gruvbox | molokai | monokai-pro| palenight |
       ;;Light Themes that i like: modus-operandi | doom-one-light
@@ -265,7 +264,7 @@
                                 (setq-local company-backends '(company-elisp))))
             (emacs-lisp-mode . company-mode))
     :config
-    (setq company-idle-delay 0.1
+    (setq company-idle-delay 0.0
                 company-minimun-prefix-length 1
       		  company-frontends '(company-preview-frontend)
 				company-frontends '(company-pseudo-tooltip-frontend company-preview-frontend))
@@ -273,31 +272,31 @@
     (add-hook 'after-init-hook 'global-company-mode))
 
 (use-package company-box
-        :straight t
-        :hook (company-mode . company-box-mode))
+   	:straight t
+      :hook (company-mode . company-box-mode))
 
 ;; (use-package corfu
-;;   :straight t
-;;   :custom
-;;   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-;;   (corfu-auto t)                 ;; Enable auto completion
-;;   (corfu-separator ?\s)          ;; Orderless field separator
-;;   (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
-;;   (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
-;;   (corfu-preview-current nil)    ;; Disable current candidate preview
-;;   (corfu-preselect 'prompt)      ;; Preselect the prompt
-;;   (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-;;   (corfu-scroll-margin 5)        ;; Use scroll margin
-;;   :init
-;;   (global-corfu-mode))
+;; :straight t
+;; :custom
+;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+;; (corfu-auto t)                 ;; Enable auto completion
+;; (corfu-separator ?\s)          ;; Orderless field separator
+;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
+;; (corfu-preview-current nil)    ;; Disable current candidate preview
+;; (corfu-preselect 'prompt)      ;; Preselect the prompt
+;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
+;; (corfu-scroll-margin 5)        ;; Use scroll margin
+;; :init
+;; (global-corfu-mode))
 
 ;; (use-package kind-icon
-;;   :straight t
-;;   :after corfu
-;;   :custom
-;;   (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
-;;   :config
-;;   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+;; :straight t
+;; :after corfu
+;; :custom
+;; (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
+;; :config
+;; (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 (defun efs/org-mode-setup ()
       (org-indent-mode)
@@ -375,7 +374,8 @@
           org-roam-ui-open-on-start t))
 
 (use-package magit
-    :straight t)
+    :straight t
+    :bind ("C-x g" . magit-status))
 
 (use-package git-gutter
     :straight t
@@ -598,35 +598,34 @@
          ("\\.php\\'" . php-mode))
 
 (use-package tide
-    :straight t
-    :after (js2-mode typescript-mode company-mode flycheck)
-    :hook ((typescript-mode . tide-setup)
-           (typescript-mode . tide-hl-identifier-mode)
-           (before-save . tide-format-before-save)))
+  :straight t
+  :after (js2-mode typescript-mode company-mode flycheck)
+  :hook ((typescript-mode . tide-setup)
+         (typescript-mode . tide-hl-identifier-mode)
+         (before-save . tide-format-before-save)))
 
-      (use-package typescript-mode
-        :straight t
-        :mode "\\.tsx?\\'"
-        :config
-        (setq typescript-indent-level 2))
+    (use-package typescript-mode
+      :straight t
+      :mode "\\.ts\\'"
+      :config
+      (setq typescript-indent-level 2))
 
-(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-mode))
 
-  (defun setup-tide-mode ()
-      (interactive)
-      (tide-setup)
-      (flycheck-mode +1)
-      (setq flycheck-check-syntax-automatically '(save mode-enabled))
-      (eldoc-mode +1)
-      (tide-hl-identifier-mode +1))
+(defun setup-tide-mode ()
+    (interactive)
+    (tide-setup)
+    (flycheck-mode +1)
+    (setq flycheck-check-syntax-automatically '(save mode-enabled))
+    (eldoc-mode +1)
+    (tide-hl-identifier-mode +1))
 
-    ;; formats the buffer before saving
-    (add-hook 'before-save-hook 'tide-format-before-save)
+  ;; formats the buffer before saving
+  (add-hook 'before-save-hook 'tide-format-before-save)
 
-    ;; if you use typescript-mode
-    (add-hook 'typescript-mode-hook #'setup-tide-mode)
+  ;; if you use typescript-mode
+  (add-hook 'typescript-mode-hook #'setup-tide-mode)
 
-    (add-hook 'tsx-ts-mode-hook #'setup-tide-mode)
+  (add-hook 'tsx-ts-mode-hook #'setup-tide-mode)
 
 (defun dw/set-js-indentation ()
   (setq js-indent-level 2)
@@ -635,7 +634,7 @@
 
 (use-package js2-mode
   :straight t
-  :mode "\\.jsx?\\'"
+  :mode "\\.js\\'"
   :config
   ;; Use js2-mode for Node scripts
   (add-to-list 'magic-mode-alist '("#!/usr/bin/env node" . js2-mode))
@@ -662,20 +661,24 @@
     :config
     (apheleia-global-mode +1))
 
+(setq web-mode-markup-indent-offset 2)
+(setq web-mode-code-indent-offset 2)
+(setq web-mode-css-indent-offset 2)
+
 (use-package web-mode
     :straight t
     :mode (
-                         ("\\.html\\'" . web-mode))
+                         ("\\.html\\'" . web-mode)
+                         ("\\.jsx\\'" . web-mode)
+                         ("\\.tsx\\'" . web-mode)
+	                     ("\\.css\\'" . web-mode))
     :config
     (setq web-mode-enable-auto-closing t)
     (setq web-mode-enable-auto-identation t)
     (setq web-mode-enable-auto-close t)
     (setq web-mode-enable-auto-pairing t))
 
-(add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
-
 (add-hook 'web-mode-hook #'lsp)
-
 
 (add-hook 'web-mode-before-auto-complete-hooks 'company-mode-hook)
 
@@ -686,7 +689,7 @@
 (use-package json-mode
     :mode "\\.json\\'"
     :hook ((json-mode . (lambda ()
-                    (when (require 'lsp-json nil t)
+                    (when (require 'lsp-json t)
                         (lsp))))))
 
 (use-package yaml-mode
@@ -756,3 +759,15 @@
 
 (use-package multi-vterm
     :straight t)
+
+(use-package format-all
+        :straight t
+		:hook (prog-modfe . format-all-mode)
+        :config
+        (setq-default format-all-formatters '(("C"			(astyle "--mode=c"))
+                                                                                          ("Java"	(astyle "--mode=java"))
+                                                                                          ("C++"	(astyle "--mode=c++"))
+                                                                                          ("Rust"	(astyle "--mode=rust"))
+                                                                                          ("Php"	(astyle "--mode=php"))
+                                                                                          ("Javascript"	(astyle "--mode=javascript"))
+                                                                                          ("Typescript"	(astyle "--mode=typescript")))))
