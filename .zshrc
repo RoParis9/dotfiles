@@ -102,14 +102,18 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 alias v="nvim"
+
+alias w="nitrogen --set-zoom-fill --random ~/Media/wallpapers"
+
+#Nodejs
 export PATH=/home/rodrigo/nodejs/bin:$PATH
+#asdf
 export PATH=$HOME/.asdf/asdf.sh:$PATH 
+#golang
 export PATH=/usr/local/go/bin:$PATH
+#golang
 export PATH=$HOME/go/bin:$PATH
+#dotnet
 export PATH=/usr/share/dotnet:$PATH
-
-
-
-# Load Angular CLI autocompletion.
-source <(ng completion script)
+# Php composer
 export PATH="$PATH:$HOME/.config/composer/vendor/bin"
