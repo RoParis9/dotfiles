@@ -1,27 +1,43 @@
-(custom-set-variables
-  ;; custom-set-variables was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
-  '(package-selected-packages
+(defvar bootstrap-version)
+(let ((bootstrap-file
+      (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+        "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+        'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+    
+   (straight-use-package 'use-package)
 
- (custom-set-faces
-  ;; custom-set-faces was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
-  )))
+(setq straight-use-package-by-default t)
 
+;; Better default modes
+ (electric-pair-mode t)
+ (show-paren-mode 1)
+ (setq-default indent-tabs-mode nil)
+ (save-place-mode t)
+ (savehist-mode t)
+ (recentf-mode t)
+ (global-auto-revert-mode t)
+
+ ;; to open links when press enter on org-mode
  (setq org-return-follows-link t)
- ;; The default is 800 kilobytes.  Measured in bytes.
- (setq gc-cons-threshold (* 50 1000 1000))
 
-(setq exec-path (append exec-path '("~/.asdf/shims")))
+ ;; The default is 800 kilobytes.  Measured in bytes.
+ (setq gc-cons-threshold 100000000)
+
+ (setq exec-path (append exec-path '("~/.asdf/shims")))
+
  ;; Remove Welcome Screen
  (setq inhibit-startup-message t)
 
-(setq custom-safe-themes t)
+ (setq custom-safe-themes t)
 
+ (setq frame-resize-pixelwise t)
 
  ;;Fixing the Scratch buffer
  (setq initial-scratch-message "")
@@ -35,7 +51,7 @@
 
  ;; ;; Removes *messages* from the buffer.
  (setq-default message-log-max nil)
- (kill-buffer "*Messages*")
+ ;;(kill-buffer "*Messages*")
 
  ;; Removes *Completions* from buffer after you've opened a file.
  (add-hook 'minibuffer-exit-hook
@@ -93,15 +109,13 @@
    (dolist (mode '(org-mode-hook
            term-mode-hook
            shell-mode-hook
-           treemacs-mode-hook
- 			 vterm-mode-hook
+           vterm-mode-hook
            eshell-mode-hook))
      (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
    ;;highlight parenteses
    (show-paren-mode 1)
    (setq-default fill-column 80)
-
 
    ;;font size
    (set-face-attribute
@@ -112,78 +126,62 @@
     :weight 'medium
     :width 'normal)
 
-(defvar bootstrap-version)
-(let ((bootstrap-file
-      (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-        "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-        'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-    
-   (straight-use-package 'use-package)
-
-(setq straight-use-package-by-default t)
-
 (use-package which-key
   :straight t
   :config
   (which-key-mode))
 
-(add-to-list 'default-frame-alist '(alpha-background . 100))
+(add-to-list 'default-frame-alist '(alpha-background . 80))
 
-
-  (use-package doom-themes
-      :straight t
-      :config
-      (doom-themes-visual-bell-config)
-      (doom-themes-treemacs-config)
-      (load-theme 'doom-one-light))
-
-      ;;Dark Themes that i like: dracula | gruvbox | molokai | monokai-pro| palenight |
-      ;;Light Themes that i like: modus-operandi | doom-one-light
-
-(use-package doom-modeline
+(use-package doom-themes
     :straight t
-    :custom
-    (doom-modeline-major-mode-icon t)
-    (doom-modeline-major-mode-color-icon t)
-    (doom-modeline-time-icon t)
-    (doom-modeline-lsp t)
-    :init
-    (doom-modeline-mode))
-
-      (use-package all-the-icons
-      		:straight t
-      		:if (display-graphic-p))
-
-      (use-package rainbow-delimiters
-      		:straight t
-      		:hook
-      		(prog-mode . rainbow-delimiters-mode))
-
-(use-package centaur-tabs
-    :straight t
-    :bind
-    ("C-c n" . centaur-tabs-forward)
-    ("C-c b" . centaur-tabs-backward)
     :config
-    (setq centaur-tabs-set-bar 'over
-        centaur-tabs-set-icons t
-        centaur-tabs-gray-out-icons 'buffer
-        centaur-tabs-style "bar"
-        centaur-tabs-height 24
-        centaur-tabs-set-modifier-marker t
-        centaur-tabs-modifier-marker "•")
-(centaur-tabs-mode t))
+    (doom-themes-visual-bell-config)
+    (doom-themes-treemacs-config)
+    (load-theme 'doom-monokai-pro))
+
+    ;;Dark Themes that i like: dracula | gruvbox | molokai | monokai-pro| palenight |
+    ;;Light Themes that i like: modus-operandi | doom-one-light
+
+    (use-package rainbow-delimiters
+    		:straight t
+    		:hook
+    		(prog-mode . rainbow-delimiters-mode))
+
+(use-package treemacs
+     :straight t
+     :bind
+     (:map global-map
+                 ("C-\\" . treemacs)
+                 ("C-0" . treemacs-select-window))
+     :hook
+     (treemacs-mode . treemacs-project-follow-mode))
+
+(use-package treemacs-evil
+    :after (treemacs evil)
+    :straight t)
+
+(use-package treemacs-projectile
+    :after (treemacs projectile)
+    :straight t)
+
+(use-package treemacs-icons-dired
+    :hook (dired-mode . treemacs-icons-dired-enable-once)
+    :straight t)
+
+(use-package treemacs-magit
+    :after (treemacs magit)
+    :straight t)
+
+(use-package treemacs-all-the-icons
+    :straight t
+    :after (treemacs all-the-icons)
+    :config
+    (treemacs-load-theme "all-the-icons"))
 
 (use-package ace-window
-		:straight t
-		:bind (("C-x o" . ace-window)))
+   :straight t
+   :bind (("C-x o" . ace-window)))
 
 (use-package evil
     :straight t
@@ -214,13 +212,29 @@
     :init
     (smartparens-global-mode))
 
-;; Completions for Emacs, on the file buffer, like C-x C-f
-(use-package vertico
+;;all-the-icons on vertico
+(use-package all-the-icons-completion
+:straight t
+:after (marginalia all-the-icons)
+:hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
+:init
+(all-the-icons-completion-mode))
+
+;;extra info on vertico
+
+(use-package marginalia
     :straight t
     :custom
-    (vertico-cycle t)
+    (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light t))
     :init
-    (vertico-mode))
+    (marginalia-mode))
+
+(use-package vertico
+	:straight t
+	 :custom
+         (vertico-cycle t)
+	 :init
+     (vertico-mode))
 
 ;; Searching package 
 (use-package consult
@@ -241,73 +255,36 @@
     :init
     (savehist-mode))
 
-;;all-the-icons on vertico
-(use-package all-the-icons-completion
-:straight t
-:after (marginalia all-the-icons)
-:hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
-:init
-(all-the-icons-completion-mode))
-
-;;extra info on vertico
-(use-package marginalia
-    :straight t
-    :custom
-    (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light t))
-    :init
-    (marginalia-mode))
-
 (use-package company
     :straight t
     :bind (:map company-active-map ("<tab>" . company-complete-selection))
     :hook ((emacs-lisp-mode . (lambda ()
-                                (setq-local company-backends '(company-elisp))))
+                              (setq-local company-backends '(company-elisp))))
             (emacs-lisp-mode . company-mode))
     :config
     (setq company-idle-delay 0.0
-                company-minimun-prefix-length 1
-      		  company-frontends '(company-preview-frontend)
-				company-frontends '(company-pseudo-tooltip-frontend company-preview-frontend))
+          company-show-numbers t
+          company-tooltip-align-annotations 't
+          company-minimun-prefix-length 1
+          company-frontends '(company-preview-frontend)
+		  company-frontends '(company-pseudo-tooltip-frontend company-preview-frontend))
     :init
     (add-hook 'after-init-hook 'global-company-mode))
 
 (use-package company-box
-   	:straight t
-      :hook (company-mode . company-box-mode))
-
-;; (use-package corfu
-;; :straight t
-;; :custom
-;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-;; (corfu-auto t)                 ;; Enable auto completion
-;; (corfu-separator ?\s)          ;; Orderless field separator
-;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
-;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
-;; (corfu-preview-current nil)    ;; Disable current candidate preview
-;; (corfu-preselect 'prompt)      ;; Preselect the prompt
-;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
-;; (corfu-scroll-margin 5)        ;; Use scroll margin
-;; :init
-;; (global-corfu-mode))
-
-;; (use-package kind-icon
-;; :straight t
-;; :after corfu
-;; :custom
-;; (kind-icon-default-face 'corfu-default) ; to compute blended backgrounds correctly
-;; :config
-;; (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+   :straight t
+   :hook (company-mode . company-box-mode))
 
 (defun efs/org-mode-setup ()
-      (org-indent-mode)
-      (variable-pitch-mode 1)
-      (auto-fill-mode 0)
-      (visual-line-mode 1)
-      (setq evil-auto-indent nil))
+        (org-indent-mode)
+        (variable-pitch-mode 1)
+        (auto-fill-mode 0)
+        (visual-line-mode 1)
+        (setq evil-auto-indent nil))
 
       (use-package org
-      :config
-      (setq org-ellipsis " ▾"))
+         :config
+         (setq org-ellipsis " ▾"))
 
       (defun efs/org-mode-visual-fill ()
       (setq visual-fill-column-width 80
@@ -351,17 +328,18 @@
       :init (org-bullets-mode))
 
       (use-package org-roam
-            :straight t
-            :init
-             (setq org-roam-v2-ack t)
-            :custom
-            (org-roam-directory "~/OrgNotes")
-            (org-roam-completion-everywhere t)
-            :bind (("C-c o f"  .  org-roam-node-find)
-                          ("C-c o i"  .  org-roam-node-insert)
-                          ("C-c o t" .  org-roam-node-buffer-toggle))
-            :config
-            (org-roam-setup))
+         :straight t
+         :init
+         (setq org-roam-v2-ack t)
+         :custom
+         (org-roam-directory "~/OrgNotes")
+         (org-roam-completion-everywhere t)
+         :bind (("C-c o f"  .  org-roam-node-find)
+                ("C-c o i"  .  org-roam-node-insert)
+                ("C-c o t" .  org-roam-node-buffer-toggle))
+          :config
+         (org-roam-setup))
+
 
 (use-package org-roam-ui
   :straight
@@ -390,42 +368,59 @@
 
 (global-set-key (kbd "C-c p") 'projectile-find-file)
 
-(use-package treemacs
+(use-package tree-sitter 
+       :straight t 
+       :config (global-tree-sitter-mode) 
+       (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)) 
+
+(use-package tree-sitter-langs 
+       :straight t 
+       :after tree-sitter
+       (global-tree-sitter-mode) 
+       (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+
+(use-package rainbow-delimiters
+:straight t
+:config
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
+
+(use-package flycheck
     :straight t
-    :bind
-    (:map global-map
-                ("C-\\" . treemacs)
-                ("C-0" . treemacs-select-window))
-    :config
-    (setq treemacs-is-never-other-window t))
+    :init (global-flycheck-mode t))
 
-(use-package treemacs-evil
-    :after (treemacs evil)
+(use-package pdf-tools
     :straight t)
 
-(use-package treemacs-projectile
-    :after (treemacs projectile)
-    :straight t)
-
-(use-package treemacs-icons-dired
-    :hook (dired-mode . treemacs-icons-dired-enable-once)
-    :straight t)
-
-(use-package treemacs-magit
-    :after (treemacs magit)
-    :straight t)
-
-(use-package treemacs-all-the-icons
+(use-package vterm
     :straight t
-    :after (treemacs all-the-icons)
+    :commands vterm
     :config
-    (treemacs-load-theme "all-the-icons"))
+    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
+    (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+    (setq vterm-max-scrollback 10000))
+
+  (use-package vterm-toggle
+	:straight t
+	:bind
+	(("C-`"        . vterm-toggle)
+	:map vterm-mode-map
+	("<C-return>" . vterm-toggle-insert-cd))
+	:config
+	(add-to-list 'display-buffer-alist
+	    '("\*vterm\*"
+	    (display-buffer-in-side-window)
+	    (window-height . 0.3)
+	    (side . bottom)
+	    (slot . 0))))
+
+(use-package multi-vterm
+    :straight t)
 
 (use-package dap-mode
     :straight t
     :after lsp-mode
     :hook ((lsp-mode . dap-mode)
-        (lsp-mode . dap-ui-mode))
+           (lsp-mode . dap-ui-mode))
     :custom
     (lsp-enable-dap-auto-configure t)
     :config
@@ -438,61 +433,66 @@
     ("<f9>" . dap-continue)))
 
 (use-package lsp-mode
-    :straight t
-    :commands lsp
-    :hook((lsp-java . lsp)
-        (lsp-mode . company-mode)
-        (php-mode . lsp)
-        (web-mode . lsp))
-    :custom
-    (lsp-completion-provider :none)
-    (lsp-prefer-flymake nil)
-    (lsp-headerline-breadcrumb-enable nil)
-    (lsp-headerline-breadcrumb-enable-symbol-numbers t)
-    (lsp-enable-on-type-formatting t)
-    (setq lsp-enable-snippet t)
-    :bind(:map lsp-mode-map ("C-c C-f" . lsp-format-buffer))
-    :config
-    (lsp-enable-which-key-integration t)
-    :init
-    (defun my/lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-            '(orderless)))
-    :hook
-    (lsp-completion-mode . my/lsp-mode-setup-completion))
+     :straight t
+     :commands lsp
+     :hook(
+         (lsp-mode . company-mode)
+         (lsp-mode . smartparens-mode))
+     :custom
+     (lsp-completion-provider :none)
+     (lsp-prefer-flymake nil)
+     (lsp-headerline-breadcrumb-enable t)
+     (lsp-headerline-breadcrumb-enable-symbol-numbers t)
+     (lsp-enable-on-type-formatting t)
+     (setq lsp-enable-snippet t)
+     :bind(:map lsp-mode-map ("C-c C-f" . lsp-format-buffer))
+     :config
+     (lsp-enable-which-key-integration t)
+     :init
+     (defun my/lsp-mode-setup-completion ()
+     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+             '(orderless)))
+     :hook
+     (lsp-completion-mode . my/lsp-mode-setup-completion))
 
-(add-hook 'prog-mode-hook #'lsp)
+ (add-hook 'prog-mode-hook #'lsp)
 
-(use-package lsp-ui
-    :straight t
-    :commands (lsp-ui-mode)
-    :custom
-    ;;Sideline
-    (lsp-ui-sideline-show-diagnostics t)
-    (lsp-ui-sidelin-enable nil)
-    (lsp-ui-sideline-show-hover t)
-    (lsp-ui-sideline-delay 0)
-    (lsp-ui-update-mode 'line)
-    (lsp-ui-peek-enable t)
-    ;;Documentantion
-    (lsp-ui-doc-enable t)
-    (lsp-ui-doc-header t)
-    (lsp-ui-doc-delay 0.2)
-    (lsp-ui-doc-position 'bottom)
-    ;; IMenu
-    (lsp-ui-imenu-window-width 0)
-    (lsp-ui-imenu--custom-mode-line-format nil)
-    :hook (lsp-mode . lsp-ui-mode))
+ (use-package lsp-ui
+     :straight t
+     :commands (lsp-ui-mode)
+     :custom
+     ;;Sideline
+     (lsp-ui-sideline-show-diagnostics t)
+     (lsp-ui-sidelin-enable nil)
+     (lsp-ui-sideline-show-hover t)
+     (lsp-ui-sideline-delay 0)
+     (lsp-ui-update-mode 'line)
+     (lsp-ui-peek-enable t)
+     ;;Documentantion
+     (lsp-ui-doc-enable t)
+     (lsp-ui-doc-header t)
+     (lsp-ui-doc-delay 0.2)
+     (lsp-ui-doc-position 'bottom)
+     ;; IMenu
+     (lsp-ui-imenu-window-width 0)
+     (lsp-ui-imenu--custom-mode-line-format nil)
+     :hook (lsp-mode . lsp-ui-mode))
 
 (use-package lsp-treemacs
-  :straight t
-  :commands lsp-treemacs-erros-list)
+   :straight t
+   :commands lsp-treemacs-erros-list
+   :config
+   (lsp-treemacs-sync-mode 1))
 
-(setq lsp-language-id-configuration
-           '((javascript-mode .  "javascript")
-              (php-mode . "php")
-                (typescript-mode . "typescript")))
-(setq lsp-log-io t)
+
+ (setq lsp-language-id-configuration
+            '((js2-mode .  "javascript")
+               (php-mode . "php")
+               (json-mode . "json")
+               (go-mode . "golang")
+               (rustic-mode . "rust")
+               (rjsx-mode . "tsx")
+               (typescript-mode . "typescript")))
 
 (add-hook 'c-mode-hook 'lsp)
 (add-hook 'c++-mode-hook 'lsp)
@@ -529,40 +529,15 @@
     (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
 
 (use-package go-mode
-    :straight t
-    :hook ((go-mode . lsp-deferred)
-            (go-mode . company-mode))
-    :bind (:map go-mode-map
-                ("C-c C-g" . gofmt))
-    :config
-    (require 'lsp-go)
-    (setq lsp-go-analyses
-            '((fieldalignment . t)
-            (nilness . t)
-            (unusedwrite . t)
-            (unusedparams . t)))
-
-(defun lsp-go-install-save-hooks ()
-    (add-hook 'before-save-hook #'lsp-format-buffer t t)
-    (add-hook 'before-save-hook #'lsp-organize-imports t t))
-
-(add-hook 'go-mode-hook #'lsp-go-install-save-hooks)
-
-;; Start LSP Mode and YASnippet mode
-(add-hook 'go-mode-hook #'lsp-deferred)
-(add-hook 'go-mode-hook #'yas-minor-mode)
-
-;; GOPATH/bin
-(add-to-list 'exec-path "~/go/bin")
-(setq gofmt-command "goimports"))
+   :straight t)
 
 (use-package tuareg
-        :straight t
-        :config
-        (add-hook 'tuareg 'lsp)
-        (add-hook 'tuareg 'smartparens)
-        (add-hook 'tuareg 'flycheck-mode)
-        :mode (("\\.ocamlinit\\'" . tuareg-mode)))
+    :straight t
+    :config
+    (add-hook 'tuareg 'lsp)
+    (add-hook 'tuareg 'smartparens)
+    (add-hook 'tuareg 'flycheck-mode)
+    :mode (("\\.ocamlinit\\'" . tuareg-mode)))
 
     (use-package dune
         :straight t)
@@ -585,7 +560,6 @@
         (setq merlin-command 'opam)))
 
     (add-to-list 'load-path "/home/rodrigo/.opam/default/share/emacs/site-lisp")
-    (require 'ocp-indent)
 
     (use-package flycheck-ocaml
     :straight t
@@ -606,7 +580,8 @@
 
     (use-package typescript-mode
       :straight t
-      :mode "\\.ts\\'"
+      :mode ("\\.ts\\'" . typescript-mode)
+      :mode ("\\.tsx\\'" . typescript-mode)
       :config
       (setq typescript-indent-level 2))
 
@@ -648,6 +623,11 @@
   (add-hook 'js2-mode-hook #'dw/set-js-indentation)
   (add-hook 'json-mode-hook #'dw/set-js-indentation))
 
+(use-package rjsx-mode
+      :straight t
+      :mode ("\\.jsx\\" . rjsx-mode)
+      :mode ("\\.tsx\\" . rjsx-mode))
+
 (use-package lsp-java
 :straight t
 :config
@@ -655,11 +635,6 @@
 (add-hook 'java-mode-hook 'smartparens-mode)
 (add-hook 'java-mode-hook 'flycheck-mode)
 (require 'dap-java))
-
-(use-package apheleia
-    :straight t
-    :config
-    (apheleia-global-mode +1))
 
 (setq web-mode-markup-indent-offset 2)
 (setq web-mode-code-indent-offset 2)
@@ -669,8 +644,6 @@
     :straight t
     :mode (
                          ("\\.html\\'" . web-mode)
-                         ("\\.jsx\\'" . web-mode)
-                         ("\\.tsx\\'" . web-mode)
 	                     ("\\.css\\'" . web-mode))
     :config
     (setq web-mode-enable-auto-closing t)
@@ -683,8 +656,8 @@
 (add-hook 'web-mode-before-auto-complete-hooks 'company-mode-hook)
 
 (use-package dockerfile-mode
-:straight t
-:mode "Dockerfile\\'")
+	:straight t
+	:mode "Dockerfile\\'")
 
 (use-package json-mode
     :mode "\\.json\\'"
@@ -697,77 +670,18 @@
       :mode "\\.yml\\'"
       :mode "\\.yaml\\'")
 
-(use-package tree-sitter 
-       :straight t 
-       :config (global-tree-sitter-mode) 
-       (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)) 
+(require 'eglot)
+ (add-to-list 'eglot-server-programs
+              '(go-mode . ("gopls")))
+ (add-to-list 'eglot-server-programs
+              '(js-mode . ("typescript-language-server" "--stdio")))
+ (add-to-list 'eglot-server-programs
+              '(java-mode . ("/path/to/eclipse.jdt.ls" "-configuration" "/path/to/eclipse.jdt.ls/config_mac")))
+ (add-to-list 'eglot-server-programs
+              '(rust-mode . ("rls")))
+ (add-to-list 'eglot-server-programs
+              '(c++-mode . ("clangd")))
+ (add-to-list 'eglot-server-programs
+              '(php-mode . ("intelephense" "--stdio")))
 
-(use-package tree-sitter-langs 
-       :straight t 
-       :after tree-sitter
-       (global-tree-sitter-mode) 
-       (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
-
-(use-package rainbow-delimiters
-:straight t
-:config
-(add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
-
-(use-package flycheck
-    :straight t
-    :init (global-flycheck-mode t))
-
-(use-package yasnippet   
-    :straight t
-    :config
-    (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
-    (yas-global-mode 1))
-
-(use-package yasnippet-snippets
-    :straight t)
-
-(use-package quickrun
-    :straight t)
-
-(use-package pdf-tools
-    :straight t)
-
-(use-package rainbow-mode
-    :straight t)
-
-(use-package vterm
-                   :straight t
-                   :commands vterm
-                   :config
-                   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
-                   (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
-                   (setq vterm-max-scrollback 10000))
-
-               (use-package vterm-toggle
-                  :straight t
-                  :bind
-                  (("C-`"        . vterm-toggle)
-                   :map vterm-mode-map
-                   ("<C-return>" . vterm-toggle-insert-cd))
-                  :config
-                  (add-to-list 'display-buffer-alist
-                     '("\*vterm\*"
-                       (display-buffer-in-side-window)
-                       (window-height . 0.3)
-                       (side . bottom)
-                       (slot . 0))))
-
-(use-package multi-vterm
-    :straight t)
-
-(use-package format-all
-        :straight t
-		:hook (prog-modfe . format-all-mode)
-        :config
-        (setq-default format-all-formatters '(("C"			(astyle "--mode=c"))
-                                                                                          ("Java"	(astyle "--mode=java"))
-                                                                                          ("C++"	(astyle "--mode=c++"))
-                                                                                          ("Rust"	(astyle "--mode=rust"))
-                                                                                          ("Php"	(astyle "--mode=php"))
-                                                                                          ("Javascript"	(astyle "--mode=javascript"))
-                                                                                          ("Typescript"	(astyle "--mode=typescript")))))
+ ((go-mode js2-mode java-mode rust-mode c++-mode php-mode) . eglot-ensure)
