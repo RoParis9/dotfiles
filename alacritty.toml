@@ -23,7 +23,7 @@ yellow = "#ffa800"
 size = 16
 
 [font.normal]
-family = "Fira Code Nerd font"
+family = "Fira Code Nerd Font"
 style = "Regular"
 
 [[keyboard.bindings]]
