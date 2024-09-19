@@ -1,36 +1,49 @@
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
+;;; -*- lexical-binding: t; -*-
 
-(straight-use-package 'use-package)
+  (defvar bootstrap-version)
+  (let ((bootstrap-file
+         (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+        (bootstrap-version 5))
+    (unless (file-exists-p bootstrap-file)
+      (with-current-buffer
+          (url-retrieve-synchronously
+           "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+           'silent 'inhibit-cookies)
+        (goto-char (point-max))
+        (eval-print-last-sexp)))
+    (load bootstrap-file nil 'nomessage))
 
-(setq straight-use-package-by-default t)
+  (straight-use-package 'use-package)
+
+  (setq straight-use-package-by-default t)
 
 ;; Better default modes
 (electric-pair-mode t)
 (show-paren-mode 1)
+
 (setq-default indent-tabs-mode nil)
+
 (save-place-mode t)
+
 (savehist-mode t)
+;;keep track of open files
 (recentf-mode t)
+;;Keep files up-to-date if modified outside emacs
 (global-auto-revert-mode t)
+
+;; Add unique buffer names in the minibuffer where there are many
+;; identical files. This is super useful if you rely on folders for
+;; organization and have lots of files with the same name,
+;; e.g. foo/index.ts and bar/index.ts.
+(require 'uniquify)
+(require 'project)
 
 ;; to open links when press enter on org-mode
 (setq org-return-follows-link t)
 
 ;; The default is 800 kilobytes.  Measured in bytes.
 (setq gc-cons-threshold 100000000)
-
-(setq exec-path (append exec-path '("~/.asdf/shims")))
+(setq read-process-output-max (* 1024 1024))
 
 ;; Remove Welcome Screen
 (setq inhibit-startup-message t)
@@ -42,20 +55,9 @@
 ;;Fixing the Scratch buffer
 (setq initial-scratch-message "")
 
-;;Removes *scratch* from buffer after the mode has been set.
-;;  (defun remove-scratch-buffer ()
-;;    (if (get-buffer "*scratch*")
-;;        (kill-buffer "*scratch*")))
-
-;;  (add-hook 'after-change-major-mode-hook 'remove-scratch-buffer)
-
-;; ;; Removes *messages* from the buffer.
-(setq-default message-log-max nil)
-;;(kill-buffer "*Messages*")
-
 ;; Removes *Completions* from buffer after you've opened a file.
 (add-hook 'minibuffer-exit-hook
-          '(lambda ()
+          #'(lambda ()
              (let ((buffer "*Completions*"))
                (and (get-buffer buffer)
                     (kill-buffer buffer)))))
@@ -65,7 +67,6 @@
 
 ;; Show only one active window when opening multiple files at the same time.
 (add-hook 'window-setup-hook 'delete-other-windows)
-
 
 ;; Remove Menus and Scroll Bar
 (tool-bar-mode -1)
@@ -102,107 +103,183 @@
 ;;delete selected words
 (delete-selection-mode 1)
 
-;;Line numbers
-(global-display-line-numbers-mode 'relative)
+
+;; Display line numbers only when in programming modes
+(add-hook 'prog-mode-hook 'display-line-numbers-mode)
 (setq display-line-numbers-type 'relative)
+
+
+(setq uniquify-buffer-name-style 'forward
+    window-resize-pixelwise t
+    frame-resize-pixelwise t
+    load-prefer-newer t
+    backup-by-copying t
+    ;; Backups are placed into your Emacs directory, e.g. ~/.config/emacs/backups
+    backup-directory-alist `(("." . ,(concat user-emacs-directory "backups")))
+    ;; I'll add an extra note here since user customizations are important.
+    ;; Emacs actually offers a UI-based customization menu, "M-x customize".
+    ;; You can use this menu to change variable values across Emacs. By default,
+    ;; changing a variable will write to your init.el automatically, mixing
+    ;; your hand-written Emacs Lisp with automatically-generated Lisp from the
+    ;; customize menu. The following setting instead writes customizations to a
+    ;; separate file, custom.el, to keep your init.el clean.
+    custom-file (expand-file-name "custom.el" user-emacs-directory))
 
 (dolist (mode '(org-mode-hook
                 term-mode-hook
                 shell-mode-hook
                 vterm-mode-hook
                 eshell-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+  (add-hook mode #'(lambda () (display-line-numbers-mode 0))))
 
 ;;highlight parenteses
 (show-paren-mode 1)
 (setq-default fill-column 80)
 
-;;font size
-(set-face-attribute
- 'default
- nil
- :height 120
- :family "Fira Code Nerd Font"
- :weight 'medium
- :width 'normal)
+(add-to-list 'default-frame-alist '(alpha-background . 85))
 
-(add-to-list 'default-frame-alist '(alpha-background . 100))
+        (use-package doom-themes
+          :straight t
+          :config
+          (doom-themes-visual-bell-config)
+          (load-theme 'doom-palenight))
 
-(use-package doom-themes
-  :straight t
-  :config
-  (doom-themes-visual-bell-config)
-  (load-theme 'doom-molokai))
+       (use-package doom-modeline
+          :ensure t
+          :hook (after-init . doom-modeline-mode)
+          :custom
+          (doom-modeline-major-mode-icon t)
+          (doom-modeline-major-mode-color-icon t)
+          (doom-modeline-buffer-state-icon t)
+          (doom-modeline-lsp-icon t)
+          (doom-modeline-lsp t)
+          (doom-modeline-time-live-icon t)
+          (doom-modeline-time-analogue-clock t)
+          (doom-modeline-buffer-name t)
+          (doom-modeline-column-zero-based t)
+          (doom-modeline-time-icon t)
+          (doom-modeline-minor-modes nil)
+          (doom-modeline-icon t)
+          (doom-modeline-buffer-file-name-style 'truncate-except-project)
+          (doom-modeline-lsp t))
 
+        ;;Dark Themes that i like: dracula | material-dark | gruvbox | molokai | monokai-pro| palenight | xcode | vibrant 
+        ;;Light Themes that i like: modus-operandi | doom-one-light | kaolin-light |
 
-;; (use-package kaolin-themes
-;;   :straight t
-;;   :config
-;;   (load-theme 'kaolin-valley-dark t)
-;;   (kaolin-treemacs-theme))
+        (use-package all-the-icons
+          :straight t)
 
-;;Dark Themes that i like: dracula | material-dark | gruvbox | molokai | monokai-pro| palenight | xcode | vibrant 
-;;| kaoli-bubblegum | kaolin-temple | kaolin-valley-night
-;;Light Themes that i like: modus-operandi | doom-one-light | kaolin-light |
+        ;;all-the-icons on vertico
+        (use-package all-the-icons-completion
+          :straight t
+          :after (marginalia all-the-icons)
+          :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
+          :init
+          (all-the-icons-completion-mode))
 
-(use-package rainbow-delimiters
-  :straight t
-  :hook
-  (prog-mode . rainbow-delimiters-mode))
+       (set-face-attribute
+        'default
+        nil
+        :height 120
+        :family "Fira Code Nerd Font"
+        :weight 'medium
+        :width 'normal)
 
-(use-package all-the-icons
-  :straight t)
+    (use-package beacon
+       :straight t)
 
-(use-package centaur-tabs
-  :straight t
-  :bind
-  ("C-c n" . centaur-tabs-forward)
-  ("C-c b" . centaur-tabs-backward)
-  :config
-  (setq centaur-tabs-style "alternate"
-        centaur-tabs-height 30
-        centaur-tabs-set-icons t
-        centaur-tabs-close-button "x"
-        centaur-tabs-set-modified-marker t
-        centaur-tabs-modified-marker-selected t
-        centaur-tabs-modified-marker "*")
-  
-  :hook
-  (dired-mode . centaur-tabs-local-mode)
-  (vterm-mode . centaur-tabs-local-mode))
+     (beacon-mode 1)
 
-(use-package treemacs
+     ;;emacs dashboard
+     (use-package dashboard
+       :straight t
+       :init
+       (progn
+         (setq dashboard-items '((recents .  1)
+                       (projects . 1)))
+         (setq dashboard-banner-logo-title "Lock in")
+         (setq dashboard-set-file-icons t)
+         (setq dashboard-set-heading-icons t)
+         (setq dashboard-startup-banner '1)
+         (setq dashboard-items '((recents  . 5)
+                   (bookmarks . 5)
+                   (projects . 5)
+                   (agenda . 1))))
+       :config
+       (dashboard-setup-startup-hook))
+
+  ;;tabs on top of the buffer
+  (use-package centaur-tabs
     :straight t
     :bind
-    (:map global-map
-                ("C-\\" . treemacs)
-                ("C-c q" . treemacs)
-                ("C-0" . treemacs-select-window))
+    ("C-c n" . centaur-tabs-forward)
+    ("C-c b" . centaur-tabs-forward)
     :config
-    (setq treemacs-is-never-other-window t)
-    (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
+    (setq centaur-tabs-set-bar 'over
+    centaur-tabs-set-icons t
+    centaur-tabs-style 'bar
+    centaur-tabs-gray-out-icons 'buffer
+    centaur-tabs-height 30
+    centaur-tabs-set-modified-marker t
+    centaur-tabs-modifier-marker "*")
+    (centaur-tabs-mode t))
+
+(defun disable-centaur-tabs-on-dashboard ()
+  "Disable Centaur Tabs on the dashboard."
+  (when (string-equal (buffer-name) "*dashboard*")
+    (centaur-tabs-local-mode 1)))  ;; Enable local mode to disable tabs
+
+;; Add the hook for when the dashboard is displayed
+(add-hook 'dashboard-mode-hook 'disable-centaur-tabs-on-dashboard)
+
+(use-package gcmh
+  :straight t
+  :diminish
+  :init (setq gc-cons-threshold most-positive-fixnum)
+  :hook (emacs-startup . gcmh-mode)
+  :custom
+  (gcmh-idle-delay 'auto)
+  (gcmh-auto-idle-delay-factor 10)
+  (gcmh-high-cons-threshold (* 16 1024 1024)))
+
+(use-package treemacs
+  :straight t
+  :bind
+  (:map global-map
+        ("C-\\" . treemacs)
+        ("C-c q" . treemacs)
+        ("C-0" . treemacs-select-window))
+  :config
+  (setq treemacs-is-never-other-window t)
+  (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 
 (use-package treemacs-evil
-    :after (treemacs evil)
-    :straight t)
+  :after (treemacs evil)
+  :straight t)
 
 (use-package treemacs-projectile
-    :after (treemacs projectile)
-    :straight t)
+  :after (treemacs projectile)
+  :straight t)
 
 (use-package treemacs-icons-dired
-    :hook (dired-mode . treemacs-icons-dired-enable-once)
-    :straight t)
+  :hook (dired-mode . treemacs-icons-dired-enable-once)
+  :straight t)
 
 (use-package treemacs-magit
-    :after (treemacs magit)
-    :straight t)
+  :after (treemacs magit)
+  :straight t)
 
 (use-package treemacs-all-the-icons
-    :straight t
-    :after (treemacs all-the-icons)
-    :config
-    (treemacs-load-theme "all-the-icons"))
+  :straight t
+  :after (treemacs all-the-icons)
+  :config
+  (treemacs-load-theme "all-the-icons"))
+
+(use-package treemacs-all-the-icons
+  :straight t
+  :after (treemacs all-the-icons)
+  :config
+  (treemacs-load-theme "all-the-icons"))
 
 (use-package which-key
   :straight t
@@ -210,89 +287,119 @@
   (which-key-mode t))
 
 (use-package evil
+    :straight t
+    :config
+    :init
+    (setq evil-want-keybinding nil)
+    (setq evil-want-integration t)
+    (setq evil-vsplit-window-right t)
+    (setq evil-split-window-below t)
+    :config
+    (evil-mode)
+    (evil-set-undo-system 'undo-redo)
+    ;; Use visual line motions even outside visual-line-mode buffers
+    (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+    (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+    (evil-define-key 'normal lsp-mode-map "gr" 'lsp-find-references)
+    (evil-define-key 'normal lsp-mode-map "gd" 'lsp-find-definition)
+    (evil-define-key 'normal lsp-mode-map "r" 'lsp-rename)
+    (evil-set-initial-state 'dashboard-mode 'normal)
+    (evil-set-initial-state 'message-buffer-mode 'normal))
+
+  (use-package evil-nerd-commenter
+    :straight t
+    :bind
+    ("C-c c" . evilnc-comment-or-uncomment-lines))
+
+  
+(use-package evil-collection
+  :after evil
   :straight t
   :config
-  :init
-  (setq evil-want-keybinding nil)
-  (setq evil-vsplit-window-right t)
-  (setq evil-split-window-below t)
-  :config
-  (evil-mode)
-  (evil-set-undo-system 'undo-redo)
-  ;; Use visual line motions even outside visual-line-mode buffers
-  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-  (evil-define-key 'normal lsp-mode-map "gr" 'lsp-find-references)
-  (evil-define-key 'normal lsp-mode-map "gd" 'lsp-find-definition)
-  (evil-define-key 'normal lsp-mode-map "r" 'lsp-rename)
-  (evil-set-initial-state 'dashboard-mode 'normal)
-  (evil-set-initial-state 'message-buffer-mode 'normal))
-
-(use-package evil-nerd-commenter
-  :straight t
-  :bind
-  ("C-c c" . evilnc-comment-or-uncomment-lines))
-
-;;all-the-icons on vertico
-(use-package all-the-icons-completion
-  :straight t
-  :after (marginalia all-the-icons)
-  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
-  :init
-  (all-the-icons-completion-mode))
-
-;;extra info on vertico
-
-(use-package marginalia
-  :straight t
-  :custom
-  (marginalia-annotators '(marginalia-annotators-heavy marginalia-annotators-light t))
-  :init
-  (marginalia-mode))
+  (evil-collection-init))
 
 (use-package vertico
   :straight t
   :custom
   (vertico-cycle t)
+  (read-buffer-completion-ignore-case t)
+  (read-file-name-completion-ignore-case t)
+  (completion-styles '(basic substring partial-completion flex))
   :init
   (vertico-mode))
+
+(use-package marginalia
+  :straight t
+  :init
+  (marginalia-mode))
 
 ;; Searching package 
 (use-package consult
   :straight t
   :bind(("C-s" . consult-line)
+        ("C-c b" . consult-buffer)
         ("C-c g" . consult-ripgrep))
   :custom
   (completion-in-region-function #'consult-completion-in-region))
 
-;;you can search in any order 
 (use-package orderless
   :straight t
   :init (setq completion-styles '(orderless)))
 
-;;Save Last Completion
 (use-package savehist
-  :straight t
   :init
   (savehist-mode))
 
-(use-package company-mode
-  :straight t
-  :bind (:map company-active-map ("<tab>" . company-complete-selection))
-  :config
-  (setq company-idle-delay 0.1
-        company-tooltip-align-annotations 't
-        company-tooltip-flip-when-above t
-        company-vscode-dark-icons-margin t
-        company-minimun-prefix-length 1
-        company-frontends '(company-preview-frontend)
-        company-frontends '(company-pseudo-tooltip-frontend company-preview-frontend))
-  :init
-  (add-hook 'after-init-hook 'global-company-mode))
+;; (use-package corfu
+;;     :straight t
+;;     :config
+;;     (setq tab-always-indent 'complete)
+;;     :custom
+;;     (corfu-cycle t)                 ; Allows cycling through candidates
+;;     (corfu-auto t)                  ; Enable auto completion
+;;     (corfu-auto-prefix 0)
+;;     (corfu-auto-delay 0)
+;;     (corfu-popupinfo-delay '(0.5 . 0.2))
+;;     (corfu-preview-current 'insert) ; insert previewed candidate
+;;     (corfu-preselect 'prompt)
+;;     (corfu-on-exact-match nil)      ; Don't auto expand tempel snippets
+;;     ;; Optionally use TAB for cycling, default is `corfu-complete'.
+;;     :bind (:map corfu-map
+;;                 ("TAB"        . corfu-next)
+;;                 ([tab]        . corfu-next)
+;;                 ("S-TAB"      . corfu-previous)
+;;                 ("RET"        . corfu-complete))
+;;     :init
+;;     (global-corfu-mode)
+;;     (corfu-history-mode)
+;;     (corfu-popupinfo-mode))
 
-(use-package company-box
-  :straight t
-  :hook (company-mode . company-box-mode))
+;;   (use-package kind-icon
+;;     :straight t
+;;     :after corfu
+;;     :custom
+;;     (kind-icon-blend-background t)
+;;     (kind-icon-default-face 'corfu-default) ; only needed with blend-background
+;;     :config
+;;     (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+
+(use-package company-mode
+    :straight t
+    :bind (:map company-active-map ("<tab>" . company-complete-selection))
+    :config
+    (setq company-idle-delay 0.1
+          company-tooltip-align-annotations 't
+          company-tooltip-flip-when-above t
+          company-vscode-dark-icons-margin t
+          company-minimun-prefix-length 1
+          company-frontends '(company-preview-frontend)
+          company-frontends '(company-pseudo-tooltip-frontend company-preview-frontend))
+    :init
+    (add-hook 'after-init-hook 'global-company-mode))
+
+  (use-package company-box
+    :straight t
+    :hook (company-mode . company-box-mode))
 
 (use-package magit
   :straight t
@@ -303,6 +410,13 @@
   :config
   (global-git-gutter-mode 1))
 
+(use-package git-link
+  :straight t
+  :custom
+  (git-link-use-commit t)
+  (git-link-use-single-line-number t)
+  :commands (git-link git-link-commit git-link-homepage))
+
 (use-package projectile
   :straight t
   :config
@@ -310,15 +424,6 @@
   (projectile-mode +1))
 
 (global-set-key (kbd "C-c p") 'projectile-find-file)
-
-(use-package rainbow-delimiters
-  :straight t
-  :config
-  (add-hook 'prog-mode-hook 'rainbow-delimiters-mode))
-
-(use-package flycheck
-  :straight t
-  :init (global-flycheck-mode t))
 
 (use-package pdf-tools
   :straight t)
@@ -329,6 +434,7 @@
   :config
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")  ;; Set this to match your custom shell prompt
   (setq vterm-shell "zsh")                       ;; Set this to customize the shell to launch
+  (setq vterm-copy-mode t)
   (setq vterm-max-scrollback 10000))
 
 (use-package vterm-toggle
@@ -351,8 +457,10 @@
 
 (use-package org
   :config
-  (setq org-agenda-files '("~/Agenda"))
+  (setq org-agenda-files '("~/Agenda/agenda.org"))
   (setq org-ellipsis " ▾"))
+
+(global-set-key (kbd "C-c o a") #'org-agenda)
 
 (use-package org-roam
     :straight t
@@ -385,86 +493,87 @@
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t))
 
-(use-package org-bullets
-  :straight t
-  :after org
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
-  :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●"))
-  :init (org-bullets-mode))
-
 (use-package lsp-mode
+    :straight t
+    :hook((lsp-java . lsp))
+    :bind(:map lsp-mode-map ("C-c C-f" . lsp-format-buffer))
+    :config
+    (lsp-enable-which-key-integration t)
+    :custom
+    (lsp-headerline-breadcrum-enable t))
+
+ (use-package lsp-ui
+     :straight t
+     :commands (lsp-ui-mode)
+     :custom
+     ;;Sideline
+     (lsp-ui-sideline-show-diagnostics nil)
+     (lsp-ui-sidelin-enable t)
+     (lsp-ui-sideline-show-hover nil)
+     (lsp-ui-sideline-delay 0)
+     (lsp-ui-update-mode 'line)
+     ;;Documentantion
+     (lsp-ui-doc-enable t)
+     (lsp-ui-doc-header t)
+     (lsp-ui-doc-delay 0.2)
+     (lsp-ui-doc-position 'bottom)
+     ;; IMenu
+     (lsp-ui-imenu-window-width 0)
+     (lsp-ui-imenu--custom-mode-line-format nil)
+     :hook (lsp-mode . lsp-ui-mode))
+
+(use-package lsp-treemacs
+   :straight t
+   :commands lsp-treemacs-erros-list)
+
+(use-package dap-mode
   :straight t
-  :commands (lsp lsp-deferred)
-  :hook((lsp-mode . company-mode))
+  :after lsp-mode
+  :hook ((lsp-mode . dap-mode)
+         (lsp-mode . dap-ui-mode))
   :custom
-  (lsp-completion-provider :none)
-  (lsp-prefer-flymake nil)
-  (lsp-headerline-breadcrumb-enable t)
-  (lsp-headerline-breadcrumb-enable-symbol-numbers t)
-  (lsp-enable-on-type-formatting t)
-  (setq lsp-enable-snippet t)
-  :bind(:map lsp-mode-map ("C-c C-f" . lsp-format-buffer))
+  (lsp-enable-dap-auto-configure t)
   :config
-  (lsp-enable-which-key-integration t)
-  (setq lsp-log-io t)
-  :init
-  (defun my/lsp-mode-setup-completion ()
-    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
-          '(orderless)))
-  :hook
-  (lsp-completion-mode . my/lsp-mode-setup-completion))
+  (dap-ui-mode 1)
+  (dap-tooltip-mode 1)
+  (dap-auto-configure-mode)
+  :bind
+  (("<f7>" . dap-step-in)
+   ("<f8>" . dap-next)
+   ("<f9>" . dap-continue)))
 
-(add-hook 'prog-mode-hook #'lsp)
+(require 'dap-firefox)
 
-(use-package lsp-ui
-  :straight t
-  :commands (lsp-ui-mode)
-  :custom
-  ;;Sideline
-  (lsp-ui-sideline-show-diagnostics nil)
-  (lsp-ui-sideline-enable nil)
-  (lsp-ui-sideline-show-hover nil)
-  (lsp-ui-sideline-delay 0)
-  (lsp-ui-update-mode 'line)
-  (lsp-ui-peek-enable t)
-  ;;Documentantion
-  (lsp-ui-doc-enable t)
-  (lsp-ui-doc-header t)
-  (lsp-ui-doc-delay 1)
-  (lsp-ui-doc-position 'bottom)
-  ;; IMenu
-  (lsp-ui-imenu-window-width 0)
-  (lsp-ui-imenu--custom-mode-line-format nil)
-  :hook (lsp-mode . lsp-ui-mode))
+(defun rk/rustic-mode-hook ()
+    ;; so that run C-c C-c C-r works without having to confirm, but don't try to
+    ;; save rust buffers that are not file visiting. Once
+    ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
+    ;; no longer be necessary.
+    (when buffer-file-name
+    (setq-local buffer-save-without-query t))
+    (add-hook 'before-save-hook 'lsp-format-buffer nil t))
 
-(defun dw/set-js-indentation ()
-  (setq js-indent-level 2)
-  (setq evil-shift-width js-indent-level)
-  (setq-default tab-width 2))
+(use-package rustic
+    :ensure
+    :bind (:map rustic-mode-map
+                ("M-j" . lsp-ui-imenu)
+                ("M-?" . lsp-find-references)
+                ("C-c C-c l" . flycheck-list-errors)
+                ("C-c C-c a" . lsp-execute-code-action)
+                ("C-c C-c r" . lsp-rename)
+                ("C-c C-c q" . lsp-workspace-restart)
+                ("C-c C-c Q" . lsp-workspace-shutdown)
+                ("C-c C-c s" . lsp-rust-analyzer-status))
+    :config
+    ;; uncomment for less flashiness
+    (setq lsp-eldoc-hook nil)
+    (setq lsp-enable-symbol-highlighting nil)
+    (setq lsp-signature-auto-activate nil)
 
-(use-package js2-mode
-  :straight t
-  :mode "\\.js\\'"
-  :config
-  ;; Use js2-mode for Node scripts
-  (add-to-list 'magic-mode-alist '("#!/usr/bin/env node" . js2-mode))
-
-  (add-to-list 'auto-mode-alist '("\\.js\\" . js2-mode))
-
-  ;; Don't use built-in syntax checking
-  (setq js2-mode-show-strict-warnings nil)
-
-  ;; Set up proper indentation in JavaScript and JSON files
-  (add-hook 'js2-mode-hook #'dw/set-js-indentation)
-  (add-hook 'json-mode-hook #'dw/set-js-indentation))
-
-(use-package typescript-mode
-  :straight t
-  :mode ("\\.ts\\'" . typescript-mode)
-  :config
-  (setq typescript-indent-level 2))
+    ;; comment to disable rustfmt on save
+    (setq rustic-format-on-save t)
+    (add-hook 'rustic-mode-hook 'lsp)
+    (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
 
 (use-package jtsx
   :straight t
@@ -509,55 +618,36 @@
   (add-hook 'jtsx-jsx-mode-hook 'jtsx-bind-keys-to-jtsx-jsx-mode-map)
   (add-hook 'jtsx-tsx-mode-hook 'jtsx-bind-keys-to-jtsx-tsx-mode-map))
 
-(define-derived-mode astro-mode web-mode "astro")
-(setq auto-mode-alist
-      (append '((".*\\.astro\\'" . astro-mode))
-              auto-mode-alist))
+(defun dw/set-js-indentation ()
+  (setq js-indent-level 2)
+  (setq evil-shift-width js-indent-level)
+  (setq-default tab-width 2))
 
-(with-eval-after-load 'lsp-mode
-  (add-to-list 'lsp-language-id-configuration
-               '(astro-mode . "astro"))
+(use-package js2-mode
+  :straight t
+  :mode "\\.js\\'"
+  :config
+  ;; Use js2-mode for Node scripts
+  (add-to-list 'magic-mode-alist '("#!/usr/bin/env node" . js2-mode))
 
-  (lsp-register-client
-   (make-lsp-client :new-connection (lsp-stdio-connection '("astro-ls" "--stdio"))
-                    :activation-fn (lsp-activate-on "astro")
-                    :server-id 'astro-ls)))
+  (add-to-list 'auto-mode-alist '("\\.js\\" . js2-mode))
 
-(defun rk/rustic-mode-hook ()
-    ;; so that run C-c C-c C-r works without having to confirm, but don't try to
-    ;; save rust buffers that are not file visiting. Once
-    ;; https://github.com/brotzeit/rustic/issues/253 has been resolved this should
-    ;; no longer be necessary.
-    (when buffer-file-name
-    (setq-local buffer-save-without-query t))
-    (add-hook 'before-save-hook 'lsp-format-buffer nil t))
+  ;; Don't use built-in syntax checking
+  (setq js2-mode-show-strict-warnings nil)
 
-(use-package rustic
-    :ensure
-    :bind (:map rustic-mode-map
-                ("M-j" . lsp-ui-imenu)
-                ("M-?" . lsp-find-references)
-                ("C-c C-c l" . flycheck-list-errors)
-                ("C-c C-c a" . lsp-execute-code-action)
-                ("C-c C-c r" . lsp-rename)
-                ("C-c C-c q" . lsp-workspace-restart)
-                ("C-c C-c Q" . lsp-workspace-shutdown)
-                ("C-c C-c s" . lsp-rust-analyzer-status))
-    :config
-    ;; uncomment for less flashiness
-    (setq lsp-eldoc-hook nil)
-    (setq lsp-enable-symbol-highlighting nil)
-    (setq lsp-signature-auto-activate nil)
+  ;; Set up proper indentation in JavaScript and JSON files
+  (add-hook 'js2-mode-hook #'dw/set-js-indentation)
+  (add-hook 'json-mode-hook #'dw/set-js-indentation))
 
-    ;; comment to disable rustfmt on save
-    (setq rustic-format-on-save t)
-    (add-hook 'rustic-mode-hook 'lsp)
-    (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+(use-package typescript-mode
+  :straight t
+  :mode ("\\.ts\\'" . typescript-mode)
+  :config
+  (setq typescript-indent-level 2))
 
 (use-package go-mode
     :straight t
-    :hook ((go-mode . lsp-deferred)
-            (go-mode . company-mode))
+    :hook (go-mode . lsp-deferred)
     :bind (:map go-mode-map
                 ("C-c C-g" . gofmt))
     :config
@@ -576,29 +666,24 @@
 
 ;; Start LSP Mode and YASnippet mode
 (add-hook 'go-mode-hook #'lsp-deferred)
-(add-hook 'go-mode-hook #'yas-minor-mode)
+;;(add-hook 'go-mode-hook #'yas-minor-mode)
 
 ;; GOPATH/bin
 (add-to-list 'exec-path "~/go/bin")
 (setq gofmt-command "goimports"))
 
-(use-package php-mode
-  :straight t
-  :mode
-  ("\\.php'" . php-mode))
-
 (use-package lsp-java
-  :straight t
-  :config
-  (add-hook 'java-mode-hook 'lsp)
-  (add-hook 'java-mode-hook 'flycheck-mode)
-  (require 'dap-java))
+   :straight t
+   :config
+   (add-hook 'java-mode-hook 'lsp)
+   (add-hook 'java-mode-hook 'smartparens-mode)
+   (add-hook 'java-mode-hook 'flycheck-mode)
+   (require 'dap-java))
 
-(use-package json-mode
-  :mode "\\.json\\'"
-  :hook ((json-mode . (lambda ()
-                        (when (require 'lsp-json t)
-                          (lsp))))))
+(use-package php-mode
+   :straight t
+   :mode
+   ("\\.php'" . php-mode))
 
 (setq web-mode-markup-indent-offset 2)
 (setq web-mode-code-indent-offset 2)
@@ -617,53 +702,7 @@
 
 (add-hook 'web-mode-hook #'lsp)
 
-(add-hook 'web-mode-before-auto-complete-hooks 'company-mode-hook)
+(add-hook 'web-mode-before-auto-complete-hooks 'corfu-mode-hook)
 
-(use-package dockerfile-mode
-  :straight t
-  :mode "Dockerfile\\'")
-
-(use-package dap-mode
-  :straight t
-  :after lsp-mode
-  :hook ((lsp-mode . dap-mode)
-         (lsp-mode . dap-ui-mode))
-  :custom
-  (lsp-enable-dap-auto-configure t)
-  :config
-  (dap-ui-mode 1)
-  (dap-tooltip-mode 1)
-  (dap-auto-configure-mode)
-  :bind
-  (("<f7>" . dap-step-in)
-   ("<f8>" . dap-next)
-   ("<f9>" . dap-continue)))
-
-(require 'tree-sitter)
-  (require 'tree-sitter-langs)
-
-  (global-treesitter-mode)
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-
-(use-package treesit-auto
-  :custom
-  (treesit-auto-install 'prompt)
-  :config
-  (treesit-auto-add-to-auto-mode-alist 'all)
-  (global-treesit-auto-mode))
-
-(use-package format-all
+(use-package emmet-mode
   :straight t)
-
-(use-package auctex
-   :straight t
-   :config
-   (setq TeX-auto-save t)
-   (setq TeX-parse-self t)
-   (setq TeX-view-program-selection '((output-pdf "Evince")))
-   (setq-default TeX-master nil))
-
-(use-package reftex
-   :straight t
-   :config
-   (setq reftex-plug-into-AUCTeX t))
