@@ -29,3 +29,5 @@ export PATH=$HOME/Downloads/idea-IC-242.21829.142/bin:$PATH
 # END opam configuration
 #
 export PATH=$HOME/.config/emacs/bin/doom:$PATH
+export PATH="/home/rodrigo/.config/herd-lite/bin:$PATH"
+export PHP_INI_SCAN_DIR="/home/rodrigo/.config/herd-lite/bin:$PHP_INI_SCAN_DIR"

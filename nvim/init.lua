@@ -31,5 +31,3 @@ require("lazy").setup({
 	require("plugins.indentblankline"),
 	require("plugins.misc"),
 })
-
-vim.cmd([[colorscheme tokyonight]])

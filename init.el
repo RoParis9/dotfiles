@@ -42,7 +42,7 @@
 (setq org-return-follows-link t)
 
 ;; The default is 800 kilobytes.  Measured in bytes.
-(setq gc-cons-threshold 100000000)
+(setq gc-cons-threshold (* 100 1024 1024))
 (setq read-process-output-max (* 1024 1024))
 
 ;; Remove Welcome Screen
@@ -209,11 +209,12 @@
        (dashboard-setup-startup-hook))
 
   ;;tabs on top of the buffer
+
   (use-package centaur-tabs
     :straight t
     :bind
     ("C-c n" . centaur-tabs-forward)
-    ("C-c b" . centaur-tabs-forward)
+    ("C-c a" . centaur-tabs-backward)
     :config
     (setq centaur-tabs-set-bar 'over
     centaur-tabs-set-icons t
@@ -251,6 +252,7 @@
         ("C-0" . treemacs-select-window))
   :config
   (setq treemacs-is-never-other-window t)
+  (setq treemacs-space-between-root-nodes nil)
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 
 (use-package treemacs-evil
@@ -387,7 +389,7 @@
     :straight t
     :bind (:map company-active-map ("<tab>" . company-complete-selection))
     :config
-    (setq company-idle-delay 0.1
+    (setq company-idle-delay 0.0
           company-tooltip-align-annotations 't
           company-tooltip-flip-when-above t
           company-vscode-dark-icons-margin t
@@ -500,7 +502,16 @@
     :config
     (lsp-enable-which-key-integration t)
     :custom
-    (lsp-headerline-breadcrum-enable t))
+    (setq lsp-eldoc-enable-hover t)
+    (setq lsp-headerline-breadcrum-enable t)
+    (setq lsp-idle-delay 0.1)
+    (setq lsp-diagnostics-provider flycheck)
+    (setq lsp-enable-symbol-highlighting t)
+    (setq lsp-lens-enable t)
+    (setq lsp-signature-auto-activate nil)
+    (setq lsp-completion-provider company-mode)
+    (setq lsp-modeline-diagnostics-enable nil)
+    (setq lsp-modeline-code-actions-enable nil))
 
  (use-package lsp-ui
      :straight t
@@ -508,7 +519,7 @@
      :custom
      ;;Sideline
      (lsp-ui-sideline-show-diagnostics nil)
-     (lsp-ui-sidelin-enable t)
+     (lsp-ui-sidelin-enable nil)
      (lsp-ui-sideline-show-hover nil)
      (lsp-ui-sideline-delay 0)
      (lsp-ui-update-mode 'line)
@@ -517,6 +528,7 @@
      (lsp-ui-doc-header t)
      (lsp-ui-doc-delay 0.2)
      (lsp-ui-doc-position 'bottom)
+     (lsp-ui-doc-show-with-cursor nil)
      ;; IMenu
      (lsp-ui-imenu-window-width 0)
      (lsp-ui-imenu--custom-mode-line-format nil)
@@ -567,7 +579,7 @@
     :config
     ;; uncomment for less flashiness
     (setq lsp-eldoc-hook nil)
-    (setq lsp-enable-symbol-highlighting nil)
+    (setq lsp-enable-symbol-highlighting t)
     (setq lsp-signature-auto-activate nil)
 
     ;; comment to disable rustfmt on save
@@ -682,6 +694,8 @@
 
 (use-package php-mode
    :straight t
+   :hook
+   (add-hook 'php-mode-hook 'lsp)
    :mode
    ("\\.php'" . php-mode))
 
@@ -705,4 +719,13 @@
 (add-hook 'web-mode-before-auto-complete-hooks 'corfu-mode-hook)
 
 (use-package emmet-mode
+  :straight t)
+
+(add-to-list 'load-path "/home/rodrigo/.opam/ocaml-system/share/emacs/site-lisp")
+(require 'ocp-indent)
+
+(use-package tuareg
+  :straight t)
+
+(use-package solidity-mode
   :straight t)
