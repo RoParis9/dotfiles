@@ -14,7 +14,6 @@ return { -- Highlight, edit, and navigate code
       'dockerfile',
       'toml',
       'json',
-      'java',
       'go',
       'rust',
       'elixir',
