@@ -15,6 +15,12 @@
 
 ;; Bootstrap use-package with straight.el
 (straight-use-package 'use-package)
+(require 'use-package) 
+
+(setq native-comp-async-report-warnings-errors 'silent)
+
+;; Word Wrapper
+(global-visual-line-mode t)
 
 ;; Tell use-package to use straight.el by default for all packages
 (setq straight-use-package-by-default t)
@@ -40,15 +46,32 @@
                 (unless (file-exists-p (expand-file-name "init.eln" (car native-comp-eln-load-path)))
                   (native-compile-async user-emacs-directory 'recursively))))))
 
+
+(setq initial-scratch-message ";; Bem-vindo ao Emacs!\n")
+(setq initial-major-mode 'emacs-lisp-mode)
+
+;; Remove auto-save e backup apenas para o scratch
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (with-current-buffer "*scratch*"
+              (setq buffer-auto-save-file-name nil
+                    make-backup-files nil))))
+
 ;; Core Emacs settings
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 2)
+(setq-default xref-search-program 'ripgrep)
+(setq-default show-trailing-whitespace nil)
 (setq indent-line-function 'insert-tab)
 
 (save-place-mode t)
 (savehist-mode t)
 (recentf-mode t)
-(global-auto-revert-mode t)
+;; Only auto-revert in specific modes for performance
+(add-hook 'prog-mode-hook 'auto-revert-mode)
+
+
+(setq create-lockfiles nil)
 
 ;; Add unique buffer names
 (require 'uniquify)
@@ -60,12 +83,20 @@
 ;; Org-mode settings
 (setq org-return-follows-link t)
 
-;; Reduce output max for processes
+;; Performance optimizations
 (setq read-process-output-max (* 1024 1024))
+(setq large-file-warning-threshold 100000000)  ; 100MB
+(setq vc-follow-symlinks t)
+(setq inhibit-compacting-font-caches t)
+(setq message-log-max 10000)
+(setq ring-bell-function 'ignore)
 
 (setq custom-safe-themes t)
 
 (setq frame-resize-pixelwise t)
+
+(blink-cursor-mode -1)                                
+(pixel-scroll-precision-mode) 
 
 ;; Fixing the Scratch buffer
 (setq initial-scratch-message "")
@@ -83,16 +114,35 @@
 ;; Show only one active window when opening multiple files
 (add-hook 'window-setup-hook 'delete-other-windows)
 
-(auto-save-mode t)
+
+
+;;auto save
+(auto-save-visited-mode t)
+(setq auto-save-visited-interval 1)
+(setq auto-save-directory (concat user-emacs-directory "auto-save/"))
+(unless (file-exists-p auto-save-directory)
+  (make-directory auto-save-directory t))
+
+;; Tell the built-in auto-save feature to use this directory
+(setq auto-save-file-name-transforms `((".*" ,auto-save-directory t)))
+
+;; Optimized auto-save settings for performance
+(setq auto-save-interval 200)  ; Auto-save every 200 keystrokes (less frequent)
+(setq auto-save-timeout 3)     ; Auto-save after 3 seconds of inactivity
+(auto-save-mode t)             ; Enable auto-save mode
 
 ;; instead of yes or no i want y/n
 (defalias 'yes-or-no-p 'y-or-n-p)
 
-;;highlight current line
-(global-hl-line-mode 1)
+;;highlight current line (deferred for performance)
+(add-hook 'prog-mode-hook 'hl-line-mode)
+(add-hook 'text-mode-hook 'hl-line-mode)
 
 ;;auto-closing tags
 (electric-pair-mode 1)
+
+;;auto save config
+(defvar auto-save-directory (concat user-emacs-directory "auto-save/"))
 
 ;; delete selected words
 (delete-selection-mode 1)
@@ -121,214 +171,38 @@
 
 (setq-default fill-column 80)
 
-;; Ensure we have treesit-auto for automatic grammar management
-(use-package treesit-auto
-  :straight (treesit-auto :type git :host github :repo "renzmann/treesit-auto")
-  :init
-  ;; Opção de auto-instalação: 'always, 'prompt ou nil
-  (setq treesit-auto-install 'prompt)
-  (setq treesit-extra-load-path '("~/.emacs.d/tree-sitter"))
+(use-package super-save
+  :straight t
   :config
-  ;; Adiciona linguagens ao auto-mode-alist
-  (treesit-auto-add-to-auto-mode-alist 'all)
-  (global-treesit-auto-mode)
-  ;; Mapeia modos legados para modos baseados em Tree-sitter
-  (setq major-mode-remap-alist
-        '((c-mode          . c-ts-mode)
-          (c++-mode        . c++-ts-mode)
-          (python-mode     . python-ts-mode)
-          (js-mode         . js-ts-mode)
-          (typescript-mode . typescript-ts-mode)
-          (json-mode       . json-ts-mode)
-          (css-mode        . css-ts-mode)
-          (html-mode       . html-ts-mode)
-          (yaml-mode       . yaml-ts-mode)
-          (bash-mode       . bash-ts-mode)
-          (go-mode         . go-ts-mode)
-          (rust-mode       . rust-ts-mode)))
-  ;; Habilita Tree-sitter em prog-mode
-  (add-hook 'prog-mode-hook #'treesit-mode))
-
-(use-package tree-sitter-langs
-  :straight t
-  :after tree-sitter)
-
-(use-package lsp-mode
-  :straight t
-  :commands lsp
-  :init
-  (setq lsp-auto-guess-root t)
-  :hook
-  ((js-ts-mode-hook js-mode-hook) . lsp-deferred)
-  ((typescript-mode-hook tsx-mode-hook) . lsp-deferred)
-  :config
-  (setq lsp-enable-snippet t
-        lsp-prefer-flymake nil))
-
-;; Define a function to properly start LSP for JS/TS files
-(defun my/lsp-js-ts-setup ()
-  "Setup LSP for JavaScript and TypeScript files."
-  (when (and (or (derived-mode-p 'js-ts-mode)
-                 (derived-mode-p 'typescript-ts-mode)
-                 (derived-mode-p 'web-mode))
-             (not (lsp-mode)))
-    (lsp-deferred)))
-
-;; Hook to start LSP for JS/TS files
-(add-hook 'js-ts-mode-hook #'my/lsp-js-ts-setup)
-(add-hook 'typescript-ts-mode-hook #'my/lsp-js-ts-setup)
-(add-hook 'web-mode-hook #'my/lsp-js-ts-setup)
-
-;; Also hook for other programming modes
-(add-hook 'python-ts-mode-hook #'lsp-deferred)
-(add-hook 'rust-ts-mode-hook #'lsp-deferred)
-(add-hook 'go-ts-mode-hook #'lsp-deferred)
-
-(defun lsp-format-on-save ()
-  "Format buffer and organize imports before saving."
-  (add-hook 'before-save-hook #'lsp-format-buffer t t)
-  (add-hook 'before-save-hook #'lsp-organize-imports t t))
-
-(add-hook 'lsp-mode-hook #'lsp-format-on-save)
-
-(use-package lsp-ui
-  :straight t
-  :after lsp-mode
-  :config
-  (setq lsp-ui-sideline-enable t
-        lsp-ui-doc-enable t
-        lsp-ui-doc-position 'at-point
-        lsp-ui-peek-enable t
-        lsp-ui-sideline-show-diagnostics t
-        lsp-ui-sideline-show-hover t
-        lsp-ui-sideline-delay 0.5
-        lsp-ui-peek-enable t
-        lsp-ui-peek-show-directory t
-        lsp-ui-flycheck-enable t))
-
-;; Typescript and JS support - FIXED VERSION
-
-;; typescript-mode for .ts and .tsx
-(use-package typescript-mode
-  :straight t
-  :mode ("\\.ts\\'" . typescript-mode)  ;; Changed to typescript-ts-mode
-  :hook ((typescript-mode . my/lsp-js-ts-setup)  ;; Use our custom function
-         (typescript-mode . lsp)
-         (typescript-mode . lsp-format-on-save)))
-
-;; js-mode and js-ts-mode (for plain JS files)
-(use-package js
-  :mode ("\\.js\\'" . js-ts-mode)  ;; Changed to js-ts-mode
-  :hook ((js-ts-mode . my/lsp-js-ts-setup)  ;; Use our custom function
-         (js-ts-mode . lsp-format-on-save))
-  :config
-  (setq js-indent-level 2))
-
-(use-package web-mode
-  :straight t
-  :mode (("\\.html?\\'" . web-mode)
-         ("\\.ejs\\'" . web-mode)
-         ("\\.erb\\'" . web-mode)
-         ("\\.vue\\'" . web-mode))  ;; optionally
-  :hook ((web-mode . prettier-mode))  ;; optional auto-formatting
-  :config
-  (setq web-mode-markup-indent-offset 2)
-  (setq web-mode-code-indent-offset 2)
-  (setq web-mode-css-indent-offset 2))
-
-(use-package css-mode
-  :mode ("\\.css\\'" . css-mode)
-  :hook ((css-mode . prettier-mode))
-  :config
-  (setq css-indent-offset 2))
-
-
-(use-package jtsx
-  :straight t
-  :mode (("\\.jsx?\\'" . jtsx-jsx-mode)
-         ("\\.tsx\\'" . jtsx-tsx-mode))
-  :commands jtsx-install-treesit-language
-  :hook ((jtsx-jsx-mode . (lambda () (hs-minor-mode) (lsp-deferred)))
-        (jtsx-tsx-mode . (lambda () (hs-minor-mode) (lsp-deferred))))
-  :custom
-  ;; Optional customizations
-  (js-indent-level 2)
-  (typescript-ts-mode-indent-offset 2)
-  (jtsx-switch-indent-offset 0)
-  (jtsx-indent-statement-block-regarding-standalone-parent nil)
-  (jtsx-jsx-element-move-allow-step-out t)
-  (jtsx-enable-jsx-electric-closing-element t)
-  (jtsx-enable-electric-open-newline-between-jsx-element-tags t)
-  (jtsx-enable-jsx-element-tags-auto-sync nil)
-  (jtsx-enable-all-syntax-highlighting-features t)
-  :config
-  (defun jtsx-bind-keys-to-mode-map (mode-map)
-    "Bind keys to MODE-MAP."
-    (define-key mode-map (kbd "C-c C-j") 'jtsx-jump-jsx-element-tag-dwim)
-    (define-key mode-map (kbd "C-c j o") 'jtsx-jump-jsx-opening-tag)
-    (define-key mode-map (kbd "C-c j c") 'jtsx-jump-jsx-closing-tag)
-    (define-key mode-map (kbd "C-c j r") 'jtsx-rename-jsx-element)
-    (define-key mode-map (kbd "C-c <down>") 'jtsx-move-jsx-element-tag-forward)
-    (define-key mode-map (kbd "C-c <up>") 'jtsx-move-jsx-element-tag-backward)
-    (define-key mode-map (kbd "C-c C-<down>") 'jtsx-move-jsx-element-forward)
-    (define-key mode-map (kbd "C-c C-<up>") 'jtsx-move-jsx-element-backward)
-    (define-key mode-map (kbd "C-c C-S-<down>") 'jtsx-move-jsx-element-step-in-forward)
-    (define-key mode-map (kbd "C-c C-S-<up>") 'jtsx-move-jsx-element-step-in-backward)
-    (define-key mode-map (kbd "C-c j w") 'jtsx-wrap-in-jsx-element)
-    (define-key mode-map (kbd "C-c j u") 'jtsx-unwrap-jsx)
-    (define-key mode-map (kbd "C-c j d n") 'jtsx-delete-jsx-node)
-    (define-key mode-map (kbd "C-c j d a") 'jtsx-delete-jsx-attribute)
-    (define-key mode-map (kbd "C-c j t") 'jtsx-toggle-jsx-attributes-orientation)
-    (define-key mode-map (kbd "C-c j h") 'jtsx-rearrange-jsx-attributes-horizontally)
-    (define-key mode-map (kbd "C-c j v") 'jtsx-rearrange-jsx-attributes-vertically))
-  
-  (defun jtsx-bind-keys-to-jtsx-jsx-mode-map ()
-    (jtsx-bind-keys-to-mode-map jtsx-jsx-mode-map))
-
-  (defun jtsx-bind-keys-to-jtsx-tsx-mode-map ()
-    (jtsx-bind-keys-to-mode-map jtsx-tsx-mode-map))
-  
-  (add-hook 'jtsx-jsx-mode-hook 'jtsx-bind-keys-to-jtsx-jsx-mode-map)
-  (add-hook 'jtsx-tsx-mode-hook 'jtsx-bind-keys-to-jtsx-tsx-mode-map))
-
-;; Enable prettier
-(use-package prettier
-  :straight t
-  :hook ((typescript-ts-mode . prettier-mode)  ;; Changed to typescript-ts-mode
-         (js-ts-mode . prettier-mode)  ;; Changed to js-ts-mode
-         (web-mode . prettier-mode)))
-
-;; TypeScript LSP configuration
-(with-eval-after-load 'lsp-mode
-  (setq lsp-clients-typescript-server "typescript-language-server"
-        lsp-clients-typescript-server-args '("--stdio")))
-
-  ;; organize imports on save
-  (setq lsp-typescript-preferences-import-module-specifier "non-relative"
-        lsp-typescript-implementations-code-lens-enabled t
-        lsp-typescript-references-code-lens-enabled t
-        lsp-typescript-suggest-auto-imports t
-        lsp-typescript-auto-import-on-completion t)
-
-(use-package jest
-  :straight t
-  :hook ((typescript-ts-mode . jest-minor-mode)  ;; Changed to typescript-ts-mode
-         (js-ts-mode . jest-minor-mode)  ;; Changed to js-ts-mode
-         (web-mode . jest-minor-mode))
-  :bind (("C-c j t" . jest-file)
-         ("C-c j s" . jest-file-dwim)
-         ("C-c j p" . jest-project)))
+  (super-save-mode +1)
+  (setq super-save-auto-save-when-idle t
+        super-save-idle-duration 1  ; Save after 1 second of inactivity (more reasonable)
+        super-save-remote-files nil    ; Don't auto-save remote files
+        super-save-hook-trigger-commands '(save-buffer
+                                           evil-window-next
+                                           evil-window-prev
+                                           balance-windows
+                                           other-window
+                                           next-buffer
+                                           previous-buffer
+                                           save-some-buffers
+                                           evil-write
+                                           evil-save-and-close)
+        auto-save-default nil
+        make-backup-files nil))
 
 ;; Alpha background
-(add-to-list 'default-frame-alist '(alpha-background . 100))
+(add-to-list 'default-frame-alist '(alpha-background . 80))
 
 ;; Doom Themes
 (use-package doom-themes
   :straight t
   :demand t
   :config
-  (doom-themes-visual-bell-config)
-  (load-theme 'doom-monokai-pro t))
+  (doom-themes-visual-bell-config))
+
+(load-theme 'doom-monokai-pro t)
+
 
 ;; Doom Modeline
 (use-package doom-modeline
@@ -351,9 +225,6 @@
   (doom-modeline-buffer-file-name-style 'truncate-except-project)
   (doom-modeline-lsp t))
 
-;; All-the-icons
-(use-package all-the-icons
-  :straight t)
 
 ;; All-the-icons on Vertico/Marginalia completion
 (use-package all-the-icons-completion
@@ -361,68 +232,216 @@
   :after (marginalia all-the-icons)
   :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
   :init
-  (all-the-icons-completion-mode))
+  (all-the-icons-completion-mode)
+  :config
+  ;; Ensure icons work properly in completion
+  (setq all-the-icons-completion-method 'all-the-icons-completion-method-ivy)
+  ;; Force icon refresh
+  (add-hook 'after-init-hook
+            (lambda ()
+              (when (display-graphic-p)
+                (all-the-icons-completion-mode 1)))))
+
+
 
 ;; Font settings
 (set-face-attribute
  'default
  nil
  :height 120
- :family "Fira Code Nerd Font"
+ :family "FiraCode Nerd Font"
  :weight 'medium
  :width 'normal)
 
-;; Beacon
-(use-package beacon
+(use-package all-the-icons
+  :straight t)
+
+(use-package nerd-icons
+  :straight (nerd-icons
+             :type git
+             :host github
+             :repo "rainstormstudio/nerd-icons.el"
+             :files (:defaults "data"))
+  :custom
+  ;; The Nerd Font you want to use in GUI
+  ;; "Symbols Nerd Font Mono" is the default and is recommended
+  ;; but you can use any other Nerd Font if you want
+  (nerd-icons-font-family "FiraCode Nerd Font"))
+
+(use-package treemacs
   :straight t
   :defer t
-  :init
-  (setq beacon-blink-delay 0.1
-        beacon-blink-duration 0.2)
   :config
-  (beacon-mode 1))
+  (setq treemacs-deferred-git-apply-delay      0.2
+        treemacs-display-in-side-window        t
+        treemacs-eldoc-display                 t
+        treemacs-file-event-delay              5000
+        treemacs-file-follow-delay             0.1
+        treemacs-follow-after-init             t
+        treemacs-is-never-other-window         t
+        treemacs-no-delete-other-windows       t
+        treemacs-position                      'left
+        treemacs-show-cursor                   nil
+        treemacs-show-hidden-files             t
+        treemacs-silent-filewatch              t
+        treemacs-silent-refresh                t
+        treemacs-collapse-dirs                 0
+        treemacs-width                         35)
 
-;; Emacs Dashboard
-(use-package dashboard
+  ;; Enable auto-follow and refresh
+  (treemacs-follow-mode t)
+  (treemacs-project-follow-mode t)
+  (treemacs-git-mode t)
+  (treemacs-filewatch-mode t)
+  (treemacs-fringe-indicator-mode 'always))
+
+(use-package treemacs-nerd-icons
   :straight t
-  :defer t
-  :init
-  (progn
-    (setq dashboard-items '((recents . 5)
-                            (bookmarks . 5)
-                            (projects . 5)
-                            (agenda . 1)))
-    (setq dashboard-banner-logo-title "Lock in")
-    (setq dashboard-set-file-icons t)
-    (setq dashboard-set-heading-icons t)
-    (setq dashboard-startup-banner '1))
+  :after treemacs
   :config
-  (dashboard-setup-startup-hook))
+  ;; THIS registers the theme
+  (treemacs-load-theme "nerd-icons"))
 
-;; Centaur Tabs
+;; (use-package treemacs-all-the-icons
+;;   :straight t
+;;   :after treemacs
+;;   :config
+;;   (treemacs-load-theme "all-the-icons"))
+
+;; (with-eval-after-load 'treemacs
+;;   (require 'treemacs-all-the-icons)
+;;   (treemacs-load-theme "all-the-icons"))
+
+(with-eval-after-load 'treemacs
+  (require 'treemacs-nerd-icons)
+  (treemacs-load-theme "nerd-icons"))
+
+(add-hook 'projectile-after-switch-project-hook #'treemacs-add-and-display-current-project)
+
+(with-eval-after-load 'treemacs
+  (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
+
+;; 🪞 Match Treemacs window opacity with global frame transparency
+(defun my/treemacs-sync-opacity (&rest _)
+  "Sync Treemacs window background transparency with current frame."
+  (let* ((alpha (or (alist-get 'alpha-background default-frame-alist) 100))
+         (bg (face-attribute 'default :background nil 'default)))
+    (when (treemacs-get-local-window)
+      (with-current-buffer (treemacs-get-local-buffer)
+        (face-remap-add-relative 'default `(:background ,bg :inherit default))
+        (set-frame-parameter (window-frame (treemacs-get-local-window))
+                             'alpha-background alpha)))))
+
+(add-hook 'treemacs-select-hook #'my/treemacs-sync-opacity)
+(add-hook 'treemacs-mode-hook #'my/treemacs-sync-opacity)
+
+
+;; Função para focar o Treemacs
+(defun my/focus-treemacs ()
+  "Foca a janela do Treemacs."
+  (interactive)
+  (if (treemacs-get-local-window)
+      (select-window (treemacs-get-local-window))
+    (treemacs)))
+
+;; Função para voltar para o buffer anterior
+(defun my/focus-prev-buffer ()
+  "Volta para o buffer anterior."
+  (interactive)
+  (other-window 1)) ;; ou use outra lógica se quiser voltar para o buffer exato
+
+;; Atalhos no Evil normal mode
+(with-eval-after-load 'evil
+  (define-key evil-normal-state-map (kbd "C-h") #'my/focus-treemacs)
+  (define-key evil-normal-state-map (kbd "C-l") #'my/focus-prev-buffer))
+
+
+;; Optional integrations (if you use them)
+(use-package treemacs-evil
+  :straight t
+  :after (treemacs evil))
+
+;; Projectile integration
+(use-package treemacs-projectile
+  :straight t
+  :after (treemacs projectile)
+  :config
+  (treemacs-projectile-mode))
+
+;; Magit/Git integration
+;; optional: configure how treemacs reacts to git changes
+(use-package treemacs-magit
+  :straight t
+  :after (treemacs magit))
+
+;; LSP integration
+(use-package lsp-treemacs
+  :after (treemacs lsp-mode)
+  :config
+  (lsp-treemacs-sync-mode 1))  ;; example function to keep Treemacs in sync with LSP info
+
+(use-package treemacs-icons-dired
+  :straight t)
+
 (use-package centaur-tabs
   :straight t
-  :defer t
   :bind
   (("C-c n" . centaur-tabs-forward)
-   ("C-c a" . centaur-tabs-backward))
-  :config
-  (setq centaur-tabs-set-bar 'over
+   ("C-c b" . centaur-tabs-backward))
+  :init
+  (setq centaur-tabs-style "alternate"
         centaur-tabs-set-icons t
-        centaur-tabs-plain-icons t
-        centaur-tabs-style 'bar
-        centaur-tabs-gray-out-icons 'buffer
-        centaur-tabs-height 30
-        centaur-tabs-set-modified-marker t
-        centaur-tabs-modifier-marker "")
-  (centaur-tabs-mode t))
+        centaur-tabs-icon-type 'all-the-icons
+        centaur-tabs-set-bar 'over
+        centaur-tabs-close-button "X"
+        centaur-tabs-modified-marker "*"
+        centaur-tabs-change-fonts "Fira Code NerdFont")
+  :hook
+  (prog-mode . centaur-tabs-mode)
+  :config
+  ;; Function that decides which buffers should be hidden
+  (defun centaur-tabs-hide-tab (x)
+    "Do not show buffer X in tabs."
+    (let ((name (format "%s" x)))
+      (or
+       ;; Current window is dedicated
+       (window-dedicated-p (selected-window))
+       ;; Buffer name blacklist
+       (string-prefix-p "*epc" name)
+       (string-prefix-p "*helm" name)
+       (string-prefix-p "*scratch*" name)
+       (string-prefix-p "*Helm" name)
+       (string-prefix-p "*Compile-Log*" name)
+       (string-prefix-p "*lsp" name)
+       (string-prefix-p "*company" name)
+       (string-prefix-p "*Flycheck" name)
+       (string-prefix-p "*tramp" name)
+       (string-prefix-p " *Mini" name)
+       (string-prefix-p "*help" name)
+       (string-prefix-p "*Help" name)
+       (string-prefix-p "*straight" name)
+       (string-prefix-p " *temp" name)
+       (string-prefix-p "*mybuf" name)
+       ;; Magit buffers (but not file-visiting ones)
+       (and (string-prefix-p "magit" name)
+            (not (file-name-extension name))))))
+  ;; Tell centaur-tabs to use the function
+  (setq centaur-tabs-hide-function #'centaur-tabs-hide-tab)
+  ;; Enable globally
+  (centaur-tabs-mode 1))
 
-;; Disable Centaur Tabs on Dashboard
-(defun disable-centaur-tabs-on-dashboard ()
-  "Disable Centaur Tabs on the dashboard."
-  (when (string-equal (buffer-name) "*dashboard*")
-    (centaur-tabs-local-mode 1)))
-(add-hook 'dashboard-mode-hook 'disable-centaur-tabs-on-dashboard)
+(use-package general
+  :demand t ;; ensures it's loaded immediately
+  :config
+  ;; Define leader key function early
+  (general-create-definer my/leader-keys
+    :prefix "SPC"
+    :states '(normal visual emacs)))
+
+;; Define the keybinding now that general is guaranteed loaded
+(my/leader-keys
+  "e" '(treemacs :which-key "Toggle file explorer")
+  "RET" '(consult-bookmark :which-key "Consult Bookmarks"))
 
 (use-package gcmh
   :straight t
@@ -448,8 +467,12 @@
   (evil-set-undo-system 'undo-redo)
   (evil-global-set-key 'motion "j" 'evil-next-visual-line)
   (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+  (evil-define-key 'normal lsp-mode-map "gr" 'lsp-find-references)
+  (evil-define-key 'normal lsp-mode-map "gd" 'lsp-find-definition)
   (evil-set-initial-state 'dashboard-mode 'normal)
   (evil-set-initial-state 'message-buffer-mode 'normal))
+
+(define-key evil-normal-state-map (kbd "Q") (lambda () (interactive) (kill-current-buffer)))
 
 ;; Evil Nerd Commenter
 (use-package evil-nerd-commenter
@@ -465,12 +488,28 @@
   :config
   (evil-collection-init))
 
-(use-package general
+(use-package which-key
   :straight t
+  :init
+  (which-key-mode t))
+
+(use-package avy
+  :straight t
+  :bind (("M-j" . avy-goto-char-timer)    ; Type a few chars, then jump to one
+         ("M-g l" . avy-goto-char-2)
+         ("M-g w" . avy-goto-word-1))
+  :custom
+  (avy-style 'at-full)
+  ;; Make hints easier to read (use home row keys for jumping)
+  (avy-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+  ;; Search through all open windows in the current frame
+  (avy-all-windows t)
+  ;; Highlight the background to make the hints pop out
+  (avy-background t)
+  ;; Use a timer (0.5s) for avy-goto-char-timer so it feels responsive
+  (avy-timeout-secs 0.3)
   :config
-  (general-define-key
-   :states '(normal motion)
-   :prefix "SPC"))
+  (avy-setu'p-default))
 
 (use-package yasnippet
   :straight t
@@ -481,67 +520,92 @@
   :straight t
   :after yasnippet)
 
-(use-package company
-  :straight t
-  :hook (after-init . global-company-mode)
-  :custom
-  (company-minimum-prefix-length 2)
-  (company-idle-delay 0.1)
-  (company-tooltip-align-annotations t)
-  (company-require-match nil)
-  (company-show-quick-access t)
-  (company-selection-wrap-around t))
-
-(use-package company-box
-  :straight t
-  :hook (company-mode . company-box-mode)
-  :custom
-  (company-box-icons-alist 'company-box-icons-all-the-icons)
-  ;; Optional: Enable icons for all backends including lsp, elisp, etc.
-  :config
-  ;; Ensure you have all-the-icons installed for best results:
-  (unless (require 'all-the-icons nil t)
-    (ignore-errors (all-the-icons-install-fonts t))))
-
-;; (use-package corfu
+;; (use-package company
 ;;   :straight t
+;;   :hook (prog-mode . company-mode)
 ;;   :custom
-;;   (corfu-cycle t)
-;;   (corfu-auto t)
-;;   (corfu-auto-prefix 2)
-;;   (corfu-auto-delay 0.1)
-;;   (corfu-popupinfo-delay '(0.5 . 0.2))
-;;   (corfu-preview-current 'insert)
-;;   (corfu-preselect 'prompt)
-;;   (corfu-on-exact-match nil)
-;;   :bind (:map corfu-map
-;;               ("M-SPC"   . corfu-insert-separator)
-;;               ("TAB"     . corfu-next)
-;;               ([tab]     . corfu-next)
-;;               ("S-TAB"   . corfu-previous)
-;;               ([backtab] . corfu-previous)
-;;               ("RET"     . corfu-insert)
-;;               ("<return>" . corfu-insert))
+;;   (company-minimum-prefix-length 1)  ; Start completion earlier
+;;   (company-idle-delay 0.05)  ; Much faster response (50ms)
+;;   (company-tooltip-align-annotations t)
+;;   (company-require-match nil)
+;;   (company-show-quick-access t)
+;;   (company-selection-wrap-around t)
+;;   (company-backends '(company-capf company-dabbrev company-keywords))  ; Optimized backends
+;;   (company-transformers '(company-sort-by-backend-importance))  ; Better sorting
 ;;   :init
-;;   (global-corfu-mode)
-;;   (corfu-history-mode)
-;;   (corfu-popupinfo-mode))
+;;   (global-company-mode t))
 
-;; (defun corfu-enable-yas ()
-;;   "Enable yasnippet integration for corfu."
-;;   (setq yas-minor-mode t)
-;;   (add-hook 'corfu-mode-hook #'yas-minor-mode))
+;; (use-package company-box
+;;   :straight t
+;;   :hook (company-mode . company-box-mode)
+;;   :custom
+;;   (company-box-icons-alist 'company-box-icons-all-the-icons)
+;;   ;; Optional: Enable icons for all backends including lsp, elisp, etc.
+;;   :config
+;;   ;; Ensure you have all-the-icons installed for best results:
+;;   (unless (require 'all-the-icons nil t)
+;;     (ignore-errors (all-the-icons-install-fonts t))))
 
-;; (add-hook 'emacs-startup-hook #'corfu-enable-yas)
+(use-package corfu
+  :straight t
+  :hook
+  (lsp-after-initialize-hook . corfu-mode)
+  :custom
+  (corfu-cycle t)
+  (corfu-auto t)
+  (corfu-auto-prefix 1)  ; Start completion after 1 character
+  (corfu-auto-delay 0.0)  ; No delay for auto-completion
+  (corfu-popupinfo-delay '(0.1 . 0.1))  ; Faster popup info
+  (corfu-preview-current 'insert)
+  (corfu-preselect 'prompt)
+  (corfu-on-exact-match nil)
+  ;; --- CRITICAL FOR ORDERLESS ---
+  (corfu-quit-at-boundary 'separator) ;; Changed from t
+  (corfu-quit-no-match 'separator)    ;; Changed from t
+  ;; ------------------------------
+  (corfu-count 10)  ; Limit completion candidates
+  (corfu-max-width 100)  ; Limit popup width
+  (corfu-min-width 20)  ; Minimum popup width
+  :bind (:map corfu-map
+              ("M-SPC" . corfu-insert-separator)
+              ("TAB" . corfu-next)
+              ([tab] . corfu-next)
+              ("S-TAB" . corfu-previous)
+              ([backtab] . corfu-previous)
+              ("RET" . corfu-insert)
+              ("<return>" . corfu-insert))
+  :init
+  (global-corfu-mode)
+  (corfu-history-mode)
+  (corfu-popupinfo-mode)
+  :config
+  ;; Disable Corfu in minibuffer to prevent autocomplete in M-x and Vertico
+  (defun my/corfu-auto-exclude-predicate ()
+    "Exclude minibuffer from Corfu auto-completion."
+    (or (minibufferp)
+        (eq (current-local-map) minibuffer-local-map)
+        (eq (current-local-map) minibuffer-local-ns-map)
+        (eq (current-local-map) minibuffer-local-completion-map)
+        (eq (current-local-map) minibuffer-local-must-match-map)
+        (eq (current-local-map) minibuffer-local-filename-completion-map)))
+  
+  (setq corfu-auto-exclude-predicate #'my/corfu-auto-exclude-predicate))
 
-;; (defun corfu-yas-expand ()
-;;   "Try to expand snippet before using `corfu'."
-;;   (interactive)
-;;   (unless (yas-expand)
-;;     (corfu-complete)))
+(use-package svg-lib :straight t)
 
-;; (define-key corfu-map (kbd "TAB") #'corfu-yas-expand)
-;; (define-key corfu-map (kbd "<tab>") #'corfu-yas-expand)
+(use-package kind-icon
+  :straight t
+  :demand t  
+  :after corfu
+  :custom
+  (kind-icon-default-face 'corfu-default)
+  (kind-icon-blend-background t)
+  (kind-icon-blend-fraction 0.08)
+  (kind-icon-cache-dir (expand-file-name "cache/kind-icon/" user-emacs-directory))
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter)
+  (require 'kind-icon)
+  (kind-icon-reset-cache))
 
 (use-package cape
   :straight t
@@ -558,18 +622,10 @@
          #'cape-symbol
          #'cape-history)))
 
-;; (use-package kind-icon
-;;   :straight t
-;;   :after corfu
-;;   :custom
-;;   (kind-icon-blend-background t)
-;;   :config
-;;   (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
-
 (use-package orderless
   :straight t
-  :init
-  (setq completion-styles '(orderless)
+  :custom
+  (setq completion-styles '(orderless basic)
         completion-category-defaults nil
         completion-category-overrides '((file (styles partial-completion)))))
 
@@ -582,8 +638,10 @@
   :straight t
   :custom
   (vertico-cycle t)
-  :init
-  (vertico-mode))
+  :init (vertico-mode) ; Ativa a UI
+  :bind (:map vertico-map
+              ("C-j" . vertico-next)
+              ("C-k" . vertico-previous))) ; Atalhos ao estilo Evil/Vim
 
 (use-package marginalia
   :straight t
@@ -593,24 +651,17 @@
 (use-package consult
   :straight t
   :bind(("C-s" . consult-line)
-        ("C-c f" . consult-find )
-        ("C-c r" . consult-ripgrep)
-        ("C-c i" . consult-imenu)
-        ("C-c g" . consult-git-grep))
+        ("C-c s f" . consult-find)
+        ("C-c s b" . consult-project-buffer)
+        ("C-c s B" . consult-buffer)
+        ("C-c s r" . consult-ripgrep)
+        ("C-c y" . consult-yank-pop)
+        ("C-c s i" . consult-imenu)
+        ("C-c s g" . consult-git-grep))
+  :config
+  (setq consult-preview-key 'any)
   :custom
   (completion-in-region-function #'consult-completion-in-region))
-
-(use-package embark
-  :straight t
-  :bind
-  (("C-." . embark-act)
-   ("C-;" . embark-dwim))
-  :init
-  (setq prefix-help-command #'embark-prefix-help-command))
-
-(use-package embark-consult
-  :straight t
-  :after (embark consult))
 
 (use-package rg
   :straight t
@@ -621,26 +672,13 @@
   :straight t
   :config
   (define-key projectile-mode-map (kbd "C-x p") 'projectile-command-map)
+  (define-key projectile-mode-map (kbd "C-x p t") 'projectile-test-project)
+  (define-key projectile-mode-map (kbd "C-x p T") 'projectile-run-project)
+  (define-key projectile-mode-map (kbd "C-x p f") 'projectile-find-file)
   (setq projectile-enable-caching t)   
-  (projectile-mode +1)
-  (add-hook 'find-file-hook
-            (lambda ()
-              (when (projectile-project-p)
-                (projectile-add-known-project (projectile-project-root))))))
-
-(global-set-key (kbd "C-c p") 'projectile-find-file)
-
-(use-package flycheck
-  :straight t
-  :init (global-flycheck-mode t)
-  :hook ((typescript-ts-mode . flycheck-mode)  ;; Changed to typescript-ts-mode
-         (js-ts-mode . flycheck-mode)  ;; Changed to js-ts-mode
-         (web-mode . flycheck-mode)))
-
-(use-package which-key
-  :straight t
-  :init
-  (which-key-mode t))
+  (setq projectile-project-search-path '("~/orgfile" "~/OrgNotes" "~/Dev"))
+  (setq projectile-completion-system 'default)
+  (projectile-mode +1))
 
 (use-package rainbow-mode
   :straight t
@@ -648,16 +686,10 @@
 
 (use-package rainbow-delimiters
   :straight t
-  :config
-  (global-rainbow-delimiters-mode))
-
-(defun global-rainbow-delimiters-mode ()
-  "Enable `rainbow-delimiters-mode' in all buffers."
-  (interactive)
-  (dolist (buffer (buffer-list))
-    (with-current-buffer buffer
-      (rainbow-delimiters-mode 1)))
-  (add-hook 'after-change-major-mode-hook #'rainbow-delimiters-mode))
+  :hook
+  (prog-mode . rainbow-delimiters-mode)
+  (emacs-lisp-mode . rainbow-delimiters-mode)
+  (org-mode . rainbow-delimiters-mode))
 
 (use-package org
   :config
@@ -699,159 +731,131 @@
 
 (use-package org-bullets
   :straight t
-  :after org
+  :after org 
   :hook (org-mode . org-bullets-mode)
-  :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+  :config
+  (setq org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
 (use-package vterm
   :straight t
   :commands vterm
   :config
+  ;; --- Basic vterm settings ---
   (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")
   (setq vterm-shell "zsh")
   (setq vterm-copy-mode t)
-  (setq vterm-max-scrollback 10000))
+  (setq vterm-max-scrollback 10000)
+
+  ;; --- Make Ctrl+V and Ctrl+Shift+V paste in vterm ---
+  (define-key vterm-mode-map (kbd "C-v") #'vterm-yank)
+  (define-key vterm-mode-map (kbd "C-S-v") #'vterm-yank)
+
+  ;; --- Automatically open vterm in current file's directory ---
+  (defun my/vterm-project-root-or-default ()
+    "Return current buffer's directory or default-directory."
+    (or (and buffer-file-name (file-name-directory buffer-file-name))
+        default-directory))
+
+  (defun my/vterm-in-current-dir ()
+    "Open a vterm in the same directory as the current file."
+    (interactive)
+    (let ((default-directory (my/vterm-project-root-or-default)))
+      (vterm)))
+
+  ;; Optionally rebind the default vterm key
+  (global-set-key (kbd "C-c v t") #'my/vterm-in-current-dir))
 
 (use-package vterm-toggle
   :straight t
   :bind
-  (("C-`"   . vterm-toggle)
-   ("C-c t" . vterm-toggle)
+  (("C-`"   . my/vterm-toggle-in-current-directory)
+   ("C-c t" . my/vterm-toggle-in-current-directory)
    :map vterm-mode-map
    ("<C-return>" . vterm-toggle-insert-cd))
   :config
+  ;; Function: Toggle vterm in current file's directory
+  (defun my/vterm-toggle-in-current-directory ()
+    "Toggle vterm, and if opening, use the current buffer's directory."
+    (interactive)
+    (let ((default-directory
+           (if (buffer-file-name)
+               (file-name-directory (buffer-file-name))
+             default-directory)))
+      (vterm-toggle)))
+
+  ;; Place vterm at the bottom side window
   (add-to-list 'display-buffer-alist
-	             '("\*vterm\*"
-	               (display-buffer-in-side-window)
-	               (window-height . 0.3)
-	               (side . bottom)
-	               (slot . 0))))
+               '("\\*vterm\\*"
+                 (display-buffer-in-side-window)
+                 (window-height . 0.3)
+                 (side . bottom)
+                 (slot . 0))))
 
 (use-package multi-vterm
   :straight t
   :config
-  (global-set-key (kbd "C-c v n") 'multi-vterm)
-  (global-set-key (kbd "C-c v p") 'multi-vterm-prev)
-  (global-set-key (kbd "C-c v c") 'multi-vterm-next))
+  ;; Function: Open multi-vterm in current buffer's directory
+  (defun my/multi-vterm-in-current-directory ()
+    "Open a new multi-vterm in the same directory as the current buffer."
+    (interactive)
+    (let ((default-directory
+           (if (buffer-file-name)
+               (file-name-directory (buffer-file-name))
+             default-directory)))
+      (multi-vterm)))
+
+  ;; Keybindings for multi-vterm
+  (global-set-key (kbd "C-c v n") #'my/multi-vterm-in-current-directory)
+  (global-set-key (kbd "C-c v p") #'multi-vterm-prev)
+  (global-set-key (kbd "C-c v c") #'multi-vterm-next))
 
 (use-package magit
   :straight t)
 
-(use-package git-gutter
+(use-package diff-hl
   :straight t
+  :init
+  (global-diff-hl-mode)
   :config
-  (global-git-gutter-mode 1))
+  ;; Highlight changes in the margin if you use a terminal
+  (unless (display-graphic-p) (diff-hl-margin-mode))
+  ;; Integration with Magit (reverts gutter when you commit)
+  (add-hook 'magit-pre-refresh-hook 'diff-hl-magit-pre-refresh)
+  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh))
+
+(use-package git-timemachine
+  :straight t
+  :bind ("C-c g t" . git-timemachine))
+
+(use-package forge
+  :straight t
+  :after magit)
+
+(use-package smerge-mode
+  :ensure nil ;; Built-in
+  :config
+  (defun my/smerge-hydra ()
+    "A simple way to manage conflicts."
+    (interactive)
+    (smerge-mode 1)
+    ;; You can use M-x smerge-keep-current, etc.
+    (message "Smerge active: Use C-c ^ n/p to move, C-c ^ m/t to keep mine/theirs")))
 
 (use-package blamer
   :straight (blamer :type git :host github :repo "artawower/blamer.el")
+  :init
+  (global-blamer-mode 1)
   :custom
   (blamer-idle-time 0.5)
   (blamer-min-offset 70)
-  (blamer-view 'overlay)
+  ;; This ensures it doesn't conflict with other overlays
+  (blamer-view 'post-command) 
   (blamer-max-commit-message-length 100)
+  (blamer-author-formatter "✎ %s ")
+  (blamer-commit-formatter "• %s")
   :config
-  (global-blamer-mode 1))
-
-(use-package super-save
-  :straight t
-  :config
-  (super-save-mode +1)
-  (setq super-save-auto-save-when-idle t
-        super-save-idle-duration 2
-        auto-save-default nil
-        make-backup-files nil))
-
-(use-package rust-ts-mode
-  :straight t
-  :mode ("\\.rs" . rust-ts-mode)
-  :hook ((rust-ts-mode . lsp-deferred)
-         (rust-ts-mode . corfu-mode)))
-
-(use-package toml-mode
-  :straight t)
-
-(use-package go-mode
-  :straight t
-  :hook ((go-ts-mode . lsp-deferred))  ;; Changed to go-ts-mode
-  :bind (:map go-mode-map
-              ("C-c C-g" . gofmt))
-  :config
-  (require 'lsp-go)
-  (setq lsp-go-analyses
-        '((fieldalignment . t)
-          (nilness . t)
-          (unusedwrite . t)
-          (unusedparams . t)))
-
-  (defun lsp-go-install-save-hooks ()
-    (add-hook 'before-save-hook #'lsp-format-buffer t t)
-    (add-hook 'before-save-hook #'lsp-organize-imports t t))
-
-  (add-hook 'go-ts-mode-hook #'lsp-go-install-save-hooks)  ;; Changed to go-ts-mode
-
-  (add-hook 'go-ts-mode-hook #'lsp-deferred)  ;; Changed to go-ts-mode
-  (add-hook 'go-ts-mode-hook #'yas-minor-mode)  ;; Changed to go-ts-mode
-
-  (add-to-list 'exec-path "~/go/bin")
-  (setq gofmt-command "goimports"))
-
-(use-package solidity-mode
-  :straight t
-  :mode "\\.sol\\'"
-  :hook ((solidity-mode . lsp-deferred))
-  :config
-  (setq solidity-comment-style 'slash
-        solidity-indent-level 2))
-
-(with-eval-after-load 'lsp-mode
-  (add-to-list 'lsp-language-id-configuration '(solidity-mode . "solidity"))
-  (lsp-register-client
-   (make-lsp-client
-    :new-connection (lsp-stdio-connection '("solidity-language-server" "--stdio"))
-    :major-modes '(solidity-mode)
-    :priority -1
-    :server-id 'solidity-ls)))
-
-(use-package tuareg
-  :straight t
-  :mode (("\\.ml\\'" . tuareg-mode)
-         ("\\.mli\\'" . tuareg-mode)
-         ("\\.mlt\\'" . tuareg-mode))
-  :hook ((tuareg-mode . lsp-deferred)))
-
-(add-to-list 'load-path "/home/rodrigo/Dev/ocaml/learning_ocaml/_opam/share/emacs/site-lisp")
-
-(use-package ocp-indent
-  :straight t
-  :hook (tuareg-mode . ocp-setup-indent))
-
-(defun ocp-setup-indent ()
-  (when (fboundp 'ocp-indent-mode)
-    (ocp-indent-mode 1)))
-
-(let ((opam-share (ignore-errors (car (process-lines "opam" "var" "share")))))
-  (when (and opam-share (file-directory-p opam-share))
-    (add-to-list 'load-path (expand-file-name "emacs/site-lisp" opam-share))
-    (autoload 'merlin-mode "merlin" nil t nil)
-    (add-hook 'tuareg-mode-hook 'merlin-mode t)
-    (add-hook 'caml-mode-hook 'merlin-mode t)
-    (setq merlin-command 'opam)))
-
-(with-eval-after-load 'lsp-mode
-  (setq lsp-ocaml-lang-server-command '("ocamllsp")))
-
-(use-package emmet-mode
-  :straight t
-  :hook ((html-mode css-mode web-mode) . emmet-mode)
-  :config
-  (setq emmet-expand-jsx-className t))
-
-(use-package dockerfile-ts-mode
-  :straight (:type built-in)
-  :defer t
-  :mode (("\\Dockerfile\\'" . dockerfile-ts-mode)
-         ("\\.dockerignore\\'" . dockerfile-ts-mode)))
+  ;; Optional: Make the face look a bit more subtle (dimmed)
+  (set-face-attribute 'blamer-face nil :foreground "#7a88cf" :italic t))
 
 (use-package smartparens
   :straight t
@@ -859,102 +863,370 @@
   (smartparens-global-mode t)
   (show-smartparens-global-mode t))
 
-(use-package dap-mode
+;; Flycheck integration
+(use-package flycheck
   :straight t
-  :after lsp-mode
-  :commands dap-debug
-  :init
-  (setq dap-auto-show-output t)
+  :init (global-flycheck-mode))
+
+(use-package treesit
+  :identity t
   :config
-  (require 'dap-ui)
-  (dap-ui-mode 1)
-  (dap-ui-controls-mode 1)
-  (setq dap-tooltip-mode 1)
-  (add-hook 'dap-mode-hook 'dap-tooltip-mode)
-  (add-hook 'dap-mode-hook 'tooltip-mode)
-  (add-hook 'dap-stopped-hook (lambda (_) (dap-ui-show-many-windows t)))
-  (add-hook 'dap-terminated-hook (lambda (_) (dap-ui-hide-many-windows)))
-  (add-hook 'dap-stopped-hook (lambda (_) (dap-ui-locals)))
+  ;; 1. Define where to find the grammars
+  (setq treesit-language-source-alist
+        '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+          (css "https://github.com/tree-sitter/tree-sitter-css")
+          (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+          (html "https://github.com/tree-sitter/tree-sitter-html")
+          (go "https://github.com/tree-sitter/tree-sitter-go")
+          (gomod "https://github.com/camdencheek/tree-sitter-go-mod")
+          (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+          (json "https://github.com/tree-sitter/tree-sitter-json")
+          (make "https://github.com/alemuller/tree-sitter-make")
+          (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+          (prisma "https://github.com/victorhqc/tree-sitter-prisma")
+          (python "https://github.com/tree-sitter/tree-sitter-python")
+          (rust "https://github.com/tree-sitter/tree-sitter-rust")
+          (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+          (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+          (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 
-  (add-hook 'dap-stopped-hook (lambda (_) (call-interactively #'dap-hydra)))
+  ;; 2. Logic to auto-install missing grammars
+  (defun my/setup-install-grammars ()
+    "Install all defined tree-sitter grammars if they aren't present."
+    (interactive)
+    (dolist (grammar treesit-language-source-alist)
+      (unless (treesit-language-available-p (car grammar))
+        (treesit-install-language-grammar (car grammar)))))
 
-  (dap-auto-configure-mode 1)
+  ;; 3. Remap standard modes to TS modes automatically
+  (setq major-mode-remap-alist
+        '((bash-mode . bash-ts-mode)
+          (go-mode . go-ts-mode)
+          (go-dot-mod-mode . go-mod-ts-mode)
+          (js-mode . js-ts-mode)
+          (yaml-mode . yaml-ts-mode)
+          (css-mode . css-ts-mode)
+          (c-mode . c-ts-mode)
+          (c++-mode . c++-ts-mode)
+          (js-json-mode . json-ts-mode)
+          (python-mode . python-ts-mode)
+          (rust-mode . rust-ts-mode)
+          (typescript-mode . typescript-ts-mode)
+          (yaml-mode       . yaml-ts-mode)
+          (dockerfile-mode . dockerfile-ts-mode)
+          (terraform-mode  . terraform-ts-mode)
+          (toml-mode       . toml-ts-mode)
+          (json-mode . json-ts-mode))))
 
-  (require 'dap-node)
-  (dap-register-debug-template "Node::Run Current File"
-    (list :type "node"
-          :request "launch"
-          :name "Node::Run"
-          :program "${file}"
-          :cwd "${workspaceFolder}"
-          :runtimeExecutable "node"
-          :console "integratedTerminal"))
+;; 4. Prisma Specific Setup
+(use-package prisma-ts-mode
+  :straight (:host github :repo "nverno/prisma-ts-mode")
+  :mode "\\.prisma\\'"
+  :hook (prisma-ts-mode . lsp-deferred)
+  :config
+  ;; Register the prisma lsp client for the new ts-mode
+  (with-eval-after-load 'lsp-mode
+    (lsp-register-client
+     (make-lsp-client :new-connection (lsp-stdio-connection '("prisma-language-server" "--stdio"))
+                      :major-modes '(prisma-ts-mode prisma-mode)
+                      :priority 1
+                      :server-id 'prisma-ls))))
 
-  (dap-register-debug-template "Jest::Test File"
-    (list :type "node"
-          :request "launch"
-          :name "Jest::Test File"
-          :program "${workspaceFolder}/node_modules/.bin/jest"
-          :args '("${file}" "--runInBand")
-          :cwd "${workspaceFolder}"
-          :runtimeExecutable "node"
-          :console "integratedTerminal"
-          :internalConsoleOptions "neverOpen"))
+(use-package lsp-mode
+  :straight t
+  :hook((rustic-mode . lsp)
+        (python-ts-mode . lsp)
+        (typescript-ts-mode . lsp)
+        (jtsx-tsx-mode . lsp)
+        (go-ts-mode . lsp))
+  :bind(:map lsp-mode-map ("C-c C-f" . lsp-format-buffer))
+  :custom
+  ;; Performance optimizations for faster completion
+  (setq lsp-completion-provider :capf)
+  (setq lsp-prefer-capf t)
+  (setq lsp-enable-completion-at-point t)
+  (setq lsp-idle-delay 0.05)  ; Faster response (50ms)
+  (setq lsp-log-io nil)  ; Disable LSP logging for performance
+  (setq lsp-keep-workspace-alive nil)  ; Don't keep workspace alive unnecessarily
+  (setq lsp-enable-snippet nil)  ; Disable snippets for faster completion
+  (setq lsp-enable-indentation nil)  ; Disable LSP indentation
+  (setq lsp-enable-on-type-formatting nil)  ; Disable on-type formatting
+  (setq lsp-enable-text-document-color nil)  ; Disable color provider
+  (setq lsp-enable-folding nil)  ; Disable folding
+  (setq lsp-enable-dap-auto-configure nil)  ; Disable DAP auto-configure
+  (setq lsp-diagnostics-provider :none)  ; Disable LSP diagnostics (use flycheck)
+  ;;(setq lsp-enable-symbol-highlighting nil)  ; Disable symbol highlighting
+  (setq lsp-lens-enable nil)  ; Disable code lenses
+  (setq lsp-signature-auto-activate nil)
+  (setq lsp-modeline-diagnostics-enable nil)
+  (setq lsp-typescript-format-enable nil)
+  (setq lsp-javascript-format-enable nil)
+  (setq lsp-modeline-code-actions-enable nil)
+  (setq lsp-headerline-imenu-mode t)
+  (setq lsp-keymap-prefix "C-c l")
+  (setq lsp-eldoc-enable-hover t)
+  (setq lsp-headerline-breadcrum-enable t)
+  (setq lsp-rust-analyzer-server-display-inlay-hints t)
+  (setq lsp-rust-analyzer-cargo-watch-command "clippy")
+  (setq lsp-enable-code-actions t)
+  (setq lsp-response-timeout 10)  ; Reduce timeout
+  (setq lsp-print-io nil)  ; Disable I/O printing
+  (setq lsp-trace nil)  ; Disable tracing
+  (setq lsp-print-performance nil)  ; Disable performance logging
+  (setq lsp-completion-cache-expiry 300)  ; Cache completions for 5 minutes
+  (setq lsp-completion-cache-cleanup-interval 600)  ; Clean cache every 10 minutes
+  (setq lsp-completion-cache-cleanup-threshold 100)  ; Clean when cache has 100+ items
+  ;; Optimize completion sorting
+  (setq lsp-completion-sort-function 'lsp-completion-sort-alphabetically)
+  ;; Reduce memory usage
+  (setq lsp-completion-cache-size 50)  ; Limit cache size
+  (setq lsp-completion-cache-cleanup-threshold 25)); Clean more frequently
+:config
+(add-hook 'lsp-after-initialize-hook
+          (lambda ()
+            (setq-local before-save-hook (cons 'lsp-format-buffer before-save-hook))))
 
-  (require 'dap-gdb-lldb)
-  (dap-register-debug-template "Rust::Run"
-    (list :type "lldb"
-          :request "launch"
-          :name "Rust::Run"
-          :gdbpath "rust-lldb"
-          :target nil
-          :cwd nil))
 
-  (dap-register-debug-template "Rust::Test"
-    (list :type "lldb"
-          :request "launch"
-          :name "Rust::Test"
-          :gdbpath "rust-lldb"
-          :program "${workspaceFolder}/target/debug/<test-binary>"
-          :args '()
-          :cwd "${workspaceFolder}"))
+(use-package lsp-ui
+  :straight t
+  :commands (lsp-ui-mode)
+  :custom
+  ;;Sideline
+  (lsp-ui-sideline-show-diagnostics nil)
+  (lsp-ui-sideline-enable nil)
+  (lsp-ui-sideline-show-hover t)
+  (lsp-ui-sideline-show-code-actions t)
+  (lsp-ui-sideline-delay 0.1)
+  (lsp-ui-update-mode 'line)
+  ;;Documentantion
+  (lsp-ui-doc-enable t)
+  (lsp-ui-doc-header t)
+  (lsp-ui-doc-delay 0.2)
+  (lsp-ui-doc-position 'bottom)
+  (lsp-ui-doc-show-with-cursor nil)
+  ;; IMenu
+  (lsp-ui-imenu-window-width 0)
+  (lsp-ui-imenu--custom-mode-line-format nil)
+  :hook (lsp-mode . lsp-ui-mode))
 
-  (require 'dap-go)
-  (dap-register-debug-template "Go::Run"
-    (list :type "go"
-          :request "launch"
-          :name "Go::Run"
-          :mode "debug"
-          :program "${file}"
-          :buildFlags ""
-          :args []))
+;; Additional performance optimizations for LSP
+(defun my/lsp-performance-setup ()
+  "Setup LSP for maximum performance."
+  ;; Disable expensive features
+  (setq lsp-enable-folding nil)
+  (setq lsp-enable-text-document-color nil)
+  (setq lsp-lens-enable nil)
+  (setq lsp-signature-auto-activate nil)
+  ;; Optimize completion
+  (setq lsp-completion-cache-expiry 300)
+  (setq lsp-completion-cache-cleanup-interval 600)
+  (setq lsp-completion-cache-cleanup-threshold 50)
+  (setq lsp-completion-cache-size 25)
+  ;; Reduce I/O overhead
+  (setq lsp-log-io nil)
+  (setq lsp-print-io nil)
+  (setq lsp-trace nil)
+  (setq lsp-print-performance nil)
+  ;; Optimize response times
+  (setq lsp-response-timeout 5)
+  (setq lsp-idle-delay 0.05))
 
-  (dap-register-debug-template "Go::Test Current File"
-    (list :type "go"
-          :request "launch"
-          :name "Go::Test"
-          :mode "test"
-          :program "${file}"))
+;; Apply performance settings when LSP starts
+(add-hook 'lsp-mode-hook #'my/lsp-performance-setup)
 
-  (dap-register-debug-template "C/C++::Run"
-    (list :type "gdb"
-          :request "launch"
-          :name "C/C++::Run"
-          :gdbpath "gdb"
-          :target nil
-          :cwd nil))
+;; Alternative: Use Corfu instead of Company for faster completion
+(defun my/use-corfu-instead-of-company ()
+  "Switch to Corfu for faster completion."
+  (when (bound-and-true-p company-mode)
+    (company-mode -1))
+  (when (bound-and-true-p corfu-mode)
+    (corfu-mode 1)))
 
-  (global-set-key (kbd "C-c d h") #'dap-hydra)
-  (global-set-key (kbd "C-c d b") #'dap-breakpoint-toggle)
-  (global-set-key (kbd "C-c d c") #'dap-breakpoint-condition)
-  (global-set-key (kbd "C-c d l") #'dap-breakpoint-log-message)
-  (global-set-key (kbd "C-c d t") #'dap-debug)
+;; Uncomment the line below to automatically use Corfu instead of Company
+(add-hook 'lsp-mode-hook #'my/use-corfu-instead-of-company)
 
-  (with-eval-after-load 'which-key
-    (which-key-add-key-based-replacements
-      "C-c d" "DAP Debugger"
-      "C-c d h" "Hydra"
-      "C-c d b" "Breakpoint"
-      "C-c d c" "Conditional Breakpoint"
-      "C-c d l" "Log Breakpoint"
-      "C-c d t" "Debug Template")))
+;; (use-package rustic
+;;   :straight t
+;;   :hook
+;;   (rust-ts-mode-hook . rustic-mode)
+;;   :bind (:map rustic-mode-map
+;;               ("C-c C-c r" . rustic-run)
+;;               ("C-c C-c t" . rustic-test)
+;;               ("C-c C-c c" . rustic-compile)
+;;               ("C-c C-c l" . rustic-clippy)))
+
+
+(use-package rustic
+  :straight t
+  :init
+  ;; This is the magic line that makes rustic use tree-sitter
+  (setq rustic-treesitter-derive t)
+  :bind (:map rustic-mode-map
+              ("C-c C-c r" . rustic-run)
+              ("C-c C-c t" . rustic-test)
+              ("C-c C-c c" . rustic-compile)
+              ("C-c C-c l" . rustic-clippy))
+  :config
+  ;; Ensure rustic uses lsp-mode (it defaults to eglot in some versions)
+  (setq rustic-lsp-client 'lsp-mode))
+
+(use-package go-ts-mode
+  :mode "\\.go\\'"
+  :hook ((go-ts-mode . lsp-deferred)
+         (go-ts-mode . lsp-go-install-save-hooks))
+  :bind (:map go-ts-mode-map
+              ("C-c C-g" . gofmt))
+  :custom
+  (lsp-go-analyses
+   '((nilness . t)
+     (unusedwrite . t)
+     (unusedparams . t)))
+  :config
+  (add-to-list 'exec-path "~/go/bin")
+  (setq gofmt-command "goimports")
+  (defun lsp-go-install-save-hooks ()
+    (add-hook 'before-save-hook #'lsp-format-buffer t t)
+    (add-hook 'before-save-hook #'lsp-organize-imports t t)))
+
+(use-package typescript-mode
+  :straight t
+  :hook ((typescript-mode . lsp-deferred)
+         (js-mode . lsp-deferred))
+  :config
+  (defun lsp-typescript-install-save-hooks ()
+    (add-hook 'before-save-hook #'lsp-format-buffer t t)
+    (add-hook 'before-save-hook #'lsp-organize-imports t t))
+  (add-hook 'typescript-mode-hook #'lsp-typescript-install-save-hooks)
+  (setq typescript-indent-level 2))
+
+;; Add specific setup for typescript-ts-mode
+(use-package typescript-ts-mode
+  :mode "\\.ts\\'"
+  :hook ((typescript-ts-mode . lsp-deferred))
+  :config
+  ;; Re-use the function if available, or define it if not.
+  ;; Since typescript-mode config defines it, we can just ensure it's loaded or redefine.
+  ;; Simpler: just add the hooks directly or make sure the function is visible.
+  (add-hook 'typescript-ts-mode-hook
+            (lambda ()
+              (add-hook 'before-save-hook #'lsp-format-buffer t t)
+              (add-hook 'before-save-hook #'lsp-organize-imports t t))))
+
+(defun my-react-lsp-setup ()
+  "Setup LSP and save hooks for React (JSX/TSX) files."
+  (lsp-deferred)
+  (corfu-mode)
+  (lsp-typescript-install-save-hooks)
+  (hs-minor-mode))
+
+
+(use-package jtsx
+  :straight t
+  :mode (("\\.jsx\\'" . jtsx-jsx-mode)
+         ("\\.tsx\\'" . jtsx-tsx-mode))
+  :commands jtsx-install-treesit-language
+  :hook ((jtsx-jsx-mode . my-react-lsp-setup)
+         (jtsx-tsx-mode . my-react-lsp-setup))
+  :custom
+  (js-indent-level 2)
+  (typescript-ts-mode-indent-offset 2)
+  (jtsx-switch-indent-offset 0)
+  (jtsx-indent-statement-block-regarding-standalone-parent nil)
+  (jtsx-jsx-element-move-allow-step-out t)
+  (jtsx-enable-jsx-electric-closing-element t)
+  (jtsx-enable-electric-open-newline-between-jsx-element-tags t)
+  (jtsx-enable-jsx-element-tags-auto-sync t)
+  (jtsx-enable-all-syntax-highlighting-features t)
+  :config
+  (defun jtsx-bind-keys-to-mode-map (mode-map)
+    "Bind keys to MODE-MAP."
+    (define-key mode-map (kbd "C-c C-j") 'jtsx-jump-jsx-element-tag-dwim)
+    (define-key mode-map (kbd "C-c j o") 'jtsx-jump-jsx-opening-tag)
+    (define-key mode-map (kbd "C-c j c") 'jtsx-jump-jsx-closing-tag)
+    (define-key mode-map (kbd "C-c j r") 'jtsx-rename-jsx-element)
+    (define-key mode-map (kbd "C-c <down>") 'jtsx-move-jsx-element-tag-forward)
+    (define-key mode-map (kbd "C-c <up>") 'jtsx-move-jsx-element-tag-backward)
+    (define-key mode-map (kbd "C-c C-<down>") 'jtsx-move-jsx-element-forward)
+    (define-key mode-map (kbd "C-c C-<up>") 'jtsx-move-jsx-element-backward)
+    (define-key mode-map (kbd "C-c C-S-<down>") 'jtsx-move-jsx-element-step-in-forward)
+    (define-key mode-map (kbd "C-c C-S-<up>") 'jtsx-move-jsx-element-step-in-backward)
+    (define-key mode-map (kbd "C-c j w") 'jtsx-wrap-in-jsx-element)
+    (define-key mode-map (kbd "C-c j u") 'jtsx-unwrap-jsx)
+    (define-key mode-map (kbd "C-c j d") 'jtsx-delete-jsx-node))
+  
+  (defun jtsx-bind-keys-to-jtsx-jsx-mode-map ()
+    (jtsx-bind-keys-to-mode-map jtsx-jsx-mode-map))
+
+  (defun jtsx-bind-keys-to-jtsx-tsx-mode-map ()
+    (jtsx-bind-keys-to-mode-map jtsx-tsx-mode-map))
+
+  (add-hook 'jtsx-jsx-mode-hook 'jtsx-bind-keys-to-jtsx-jsx-mode-map)
+  (add-hook 'jtsx-tsx-mode-hook 'jtsx-bind-keys-to-jtsx-tsx-mode-map))
+
+(use-package python
+  :straight t
+  :custom
+  (python-indent-offset 4)
+  (python-shell-interpreter "python3"))
+
+;; Optional: format buffer on save (if server supports it)
+(add-hook 'python-mode-hook
+          (lambda ()
+            (add-hook 'before-save-hook #'lsp-format-buffer nil t)))
+
+(use-package solidity-mode
+  :straight t
+  :config
+  (setq solidity-solc-path "/usr/bin/solc")
+  (setq solidity-flycheck-solc-checker-active t))
+
+(use-package sol-mode
+  :straight t
+  :mode "\\.sol\\'")
+
+(defun my/org-format-all-elisp-blocks ()
+  "Indent all emacs-lisp source blocks in the current Org buffer."
+  (interactive)
+  (org-babel-map-src-blocks nil
+    (when (string= lang "emacs-lisp")
+      (org-babel-do-in-edit-buffer
+       (indent-region (point-min) (point-max))))))
+
+(use-package yaml-ts-mode
+  :straight t
+  :mode ("\\.ya?ml\\'" . yaml-ts-mode)
+  :hook (yaml-ts-mode . lsp-deferred))
+
+(use-package dockerfile-ts-mode
+  :straight t
+  :mode ("Dockerfile\\'" . dockerfile-ts-mode)
+  :hook (dockerfile-ts-mode . lsp-deferred))
+
+(use-package terraform-mode
+  :straight t
+  :mode ("\\.tf\\'" . terraform-mode)
+  :hook ((terraform-mode . lsp-deferred)
+         (terraform-mode . terraform-format-on-save-mode)))
+
+(use-package toml-ts-mode
+  :straight t
+  :mode ("\\.toml\\'" . toml-ts-mode)
+  :hook (toml-ts-mode . lsp-deferred))
+
+(use-package apheleia
+  :straight t
+  :config
+  (apheleia-global-mode +1))
+
+(with-eval-after-load 'apheleia
+  (setf (alist-get 'prettier-tsx apheleia-formatters)
+        '(("prettier"
+           "--stdin-filepath" filepath
+           "--parser" "typescriptreact"))))
+
+(with-eval-after-load 'apheleia
+  (setf (alist-get 'jtsx-tsx-mode apheleia-mode-alist) 'prettier-tsx
+        (alist-get 'typescript-ts-mode apheleia-mode-alist) 'prettier
+        (alist-get 'js-ts-mode apheleia-mode-alist) 'prettier
+        (alist-get 'json-ts-mode apheleia-mode-alist) 'prettier
+        (alist-get 'css-ts-mode apheleia-mode-alist) 'prettier))

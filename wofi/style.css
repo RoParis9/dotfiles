@@ -1,0 +1,40 @@
+window {
+  font-size: 25px;
+  font-family: "Fira Code Nerd Font";
+  background: rgba(50, 50, 50, 0.9);
+  color: white;
+  border-radius: 20px;
+}
+
+#entry {
+  padding: .50em;
+  font-family: "Fira Code Nerd Font";
+}
+
+
+#entry:selected {
+  background-color: #bbccdd;
+  background: linear-gradient(90deg, #bbccdd, #dd77ff);
+  border: none;
+}
+
+#text:selected {
+  color: #333333;
+}
+
+#input {
+  background-color: #333;
+  border: none;
+  border-radius: 20px;
+  padding: 0.50em;
+  color: white;
+}
+
+#input:focus{
+  border:none;
+  box-shadow: none;
+}
+
+#inner-box:selected {
+  border-radius: 20px;
+}

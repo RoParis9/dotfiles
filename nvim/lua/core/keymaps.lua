@@ -23,9 +23,9 @@ keymap("n", "<C-k>", "<C-w>k", opts)
 keymap("n", "<C-l>", "<C-w>l", opts)
 
 -- Window management
-keymap('n', '<leader>v', '<C-w>v', opts) -- split window vertically
-keymap('n', '<leader>h', '<C-w>s', opts) -- split window horizontally
-keymap('n', '<leader>se', '<C-w>=', opts) -- make split windows equal width & height
+keymap('n', '<leader>v', '<C-w>v', opts)      -- split window vertically
+keymap('n', '<leader>h', '<C-w>s', opts)      -- split window horizontally
+keymap('n', '<leader>se', '<C-w>=', opts)     -- make split windows equal width & height
 keymap('n', '<leader>xs', ':close<CR>', opts) -- close current split window
 
 -- Resize with arrows
@@ -38,7 +38,7 @@ keymap("n", "<C-Right>", ":vertical resize +2<CR>", opts)
 -- Buffers
 keymap('n', '<Tab>', ':bnext<CR>', opts)
 keymap('n', '<S-Tab>', ':bprevious<CR>', opts)
-keymap('n', '<leader>x', ':Bdelete!<CR>', opts) -- close buffer
+keymap('n', '<leader>x', ':Bdelete!<CR>', opts)   -- close buffer
 keymap('n', '<leader>b', '<cmd> enew <CR>', opts) -- new buffer
 
 -- Visual --
@@ -66,19 +66,21 @@ keymap("t", "<C-k>", "<C-\\><C-N><C-w>k", term_opts)
 keymap("t", "<C-l>", "<C-\\><C-N><C-w>l", term_opts)
 
 -- Telescope
-keymap("n", "<leader>t", "<cmd>lua require'telescope.builtin'.find_files(require('telescope.themes').get_dropdown({ previewer = false }))<cr>", opts)
+keymap("n", "<leader>t",
+  "<cmd>lua require'telescope.builtin'.find_files(require('telescope.themes').get_dropdown({ previewer = false }))<cr>",
+  opts)
 keymap("n", "<c-t>", "<cmd>Telescope live_grep<cr>", opts)
 
 -- debbugin
-keymap("n", "<F5>", "<cmd>lua require'dap'.continue()<cr>", opts)
-keymap("n", "<F11>", "<cmd>lua require'dap'.step_into()<cr>", opts)
-keymap("n", "<F10>", "<cmd>lua require'dap'.step_over()<cr>", opts)
-keymap("n", "<F12>", "<cmd>lua require'dap'.step_out()<cr>", opts)
-keymap("n", "<leader>b", "<cmd>lua require'dap'.toggle_breakpoint()<cr>", opts)
-keymap("n", "<leader>dr", "<cmd>lua require'dap'.repl.toggle()<cr>", opts)
-keymap("n", "<leader>dl", "<cmd>lua require'dap'.run_last()<cr>", opts)
-keymap("n", "<leader>du", "<cmd>lua require'dapui'.toggle()<cr>", opts)
-keymap("n", "<leader>dt", "<cmd>lua require'dap'.terminate()<cr>", opts)
+--keymap("n", "<F5>", "<cmd>lua require'dap'.continue()<cr>", opts)
+--keymap("n", "<F11>", "<cmd>lua require'dap'.step_into()<cr>", opts)
+--keymap("n", "<F10>", "<cmd>lua require'dap'.step_over()<cr>", opts)
+--keymap("n", "<F12>", "<cmd>lua require'dap'.step_out()<cr>", opts)
+--keymap("n", "<leader>b", "<cmd>lua require'dap'.toggle_breakpoint()<cr>", opts)
+--keymap("n", "<leader>dr", "<cmd>lua require'dap'.repl.toggle()<cr>", opts)
+--keymap("n", "<leader>dl", "<cmd>lua require'dap'.run_last()<cr>", opts)
+--keymap("n", "<leader>du", "<cmd>lua require'dapui'.toggle()<cr>", opts)
+--keymap("n", "<leader>dt", "<cmd>lua require'dap'.terminate()<cr>", opts)
 
 -- Close Buffer
 keymap("n", "<S-q>", ":bdelete! <CR>", opts)
@@ -86,15 +88,13 @@ keymap("n", "<S-q>", ":bdelete! <CR>", opts)
 -- kill neovim
 keymap("n", "<C-q>", "<cmd> q <CR>", opts)
 
--- Format
-keymap("n","<leader>f",":Format<cr>", opts)
-
 -- Save file
-keymap("n","<C-s>","<cmd> w <CR>", opts)
+keymap("n", "<C-s>", "<cmd> w <CR>", opts)
 
 -- Tabs
 keymap('n', '<leader>to', ':tabnew<CR>', opts) -- open new tab
-keymap('n', '<leader>tx', ':tabclose<CR>', opts) -- close current tab
-keymap('n', '<leader>tn', ':tabn<CR>', opts) --  go to next tab
-keymap('n', '<leader>tp', ':tabp<CR>', opts) --  go to previous tab
 
+-- toggleterm
+keymap("n", "<leader>cf", function() float_term:toggle() end, { desc = "Toggle float terminal" })
+keymap("n", "<leader>ch", function() hterm:toggle() end, { desc = "Toggle horizontal" })
+keymap("n", "<leader>cv", function() vterm:toggle() end, { desc = "Toggle vertical" })

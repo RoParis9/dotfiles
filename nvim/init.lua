@@ -28,7 +28,7 @@ require("lazy").setup({
 	require("plugins.gitsign"),
 	require("plugins.indentblankline"),
 	require("plugins.misc"),
-	require("plugins.lint"),
 	require("plugins.inline-diagnostic"),
-	require("plugins.notify")
+	require("plugins.notify"),
+	require("plugins.toggelterm")
 })
