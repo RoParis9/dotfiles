@@ -2,9 +2,14 @@
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export ZSH="$HOME/.oh-my-zsh"
 
+
+zstyle :omz:plugins:ssh-agent identities github
+zstyle :omz:plugins:ssh-agent lifetime 4h
+
 ZSH_THEME="spaceship"
 
-plugins=(git sudo docker web-search history zsh-autosuggestions asdf zsh-syntax-highlighting )
+plugins=(git ssh-agent sudo docker web-search history zsh-autosuggestions asdf zsh-syntax-highlighting )
+
 
 source $ZSH/oh-my-zsh.sh
 
@@ -31,10 +36,14 @@ export PATH=$HOME/Downloads/idea-IC-242.21829.142/bin:$PATH
 export PATH=$HOME/.config/emacs/bin/doom:$PATH
 export PATH="/home/rodrigo/.config/herd-lite/bin:$PATH"
 export PHP_INI_SCAN_DIR="/home/rodrigo/.config/herd-lite/bin:$PHP_INI_SCAN_DIR"
-<<<<<<< Updated upstream
-
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 export PATH=$JAVA_HOME/bin:$PATH
-=======
 . "$HOMe/.cargo/env"
->>>>>>> Stashed changes
+
+# bun completions
+[ -s "/home/rodrigo/.bun/_bun" ] && source "/home/rodrigo/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+

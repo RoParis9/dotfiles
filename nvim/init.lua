@@ -24,11 +24,10 @@ require("lazy").setup({
 	require("plugins.telescope"),
 	require("plugins.lsp"),
 	require("plugins.autocompletion"),
-	require("plugins.neogit"),
 	require("plugins.gitsign"),
 	require("plugins.indentblankline"),
 	require("plugins.misc"),
 	require("plugins.inline-diagnostic"),
 	require("plugins.notify"),
-	require("plugins.toggelterm")
+	require("plugins.toggleterm")
 })

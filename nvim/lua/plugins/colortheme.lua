@@ -47,6 +47,12 @@ return {
                 },
                 livePreview = true,
                 themeDefault = "kanagawa-dragon",
+                -- Add this hook to refresh lualine every time you pick a new theme
+                on_change = function()
+                    require('lualine').setup({
+                        options = { theme = 'auto' }
+                    })
+                end,    
 
                 globalBefore = [[
                     vim.o.background = 'dark'

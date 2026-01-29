@@ -56,8 +56,7 @@ return {
 			pickers = {
 				find_files = {
 					hidden = true,
-					no_ignore = false,
-					no_ignore_parent = false,
+
 				},
 				live_grep = {
 					additional_args = function()
