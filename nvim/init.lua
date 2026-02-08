@@ -29,5 +29,5 @@ require("lazy").setup({
 	require("plugins.misc"),
 	require("plugins.inline-diagnostic"),
 	require("plugins.notify"),
-	require("plugins.toggleterm")
+	require("plugins.toggleterm"),
 })

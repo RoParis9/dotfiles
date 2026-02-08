@@ -45,11 +45,6 @@ return {
       horizontal_term:toggle()
     end, { desc = "Toggle horizontal terminal" })
     
-    -- Toggle terminal in insert mode
-    vim.keymap.set("i", "<leader>t", function()
-      horizontal_term:toggle()
-    end, { desc = "Toggle horizontal terminal" })
-    
     -- Toggle terminal in terminal mode
     vim.keymap.set("t", "<leader>t", function()
       horizontal_term:toggle()
