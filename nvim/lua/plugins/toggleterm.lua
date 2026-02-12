@@ -45,10 +45,6 @@ return {
       horizontal_term:toggle()
     end, { desc = "Toggle horizontal terminal" })
     
-    -- Toggle terminal in terminal mode
-    vim.keymap.set("t", "<leader>t", function()
-      horizontal_term:toggle()
-    end, { desc = "Toggle horizontal terminal" })
     
     -- Optional: Create a floating terminal with <leader>tf
     local float_term = Terminal:new({
