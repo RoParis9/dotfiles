@@ -15,7 +15,25 @@
 
 ;; Bootstrap use-package with straight.el
 (straight-use-package 'use-package)
-(require 'use-package) 
+(require 'use-package)
+
+;; `straight-recipe-overrides' is ((PROFILE . RECIPE-LIST) ...); default profile
+;; is nil. A bare (nerd-icons ...) at top level is ignored, which caused the
+;; “two different recipes” :files warning (MELPA vs your fork).
+(let ((cell (assoc nil straight-recipe-overrides))
+      (nerd-recipe '(nerd-icons :type git :host github
+                                :repo "rainstormstudio/nerd-icons.el"
+                                :files (:defaults "data"))))
+  (if cell
+      (unless (assq 'nerd-icons (cdr cell))
+        (setcdr cell (cons nerd-recipe (cdr cell))))
+    (push (cons nil (list nerd-recipe)) straight-recipe-overrides)))
+
+;; Prevent straight from shadowing built-in packages that ship with Emacs 29+.
+;; Without this, straight pulls an external `project` package that conflicts
+;; with the one already compiled into the Emacs binary.
+(dolist (pkg '(project xref flymake jsonrpc eldoc seq))
+  (straight-use-package `(,pkg :type built-in)))
 
 (setq native-comp-async-report-warnings-errors 'silent)
 
@@ -192,66 +210,63 @@
         make-backup-files nil))
 
 ;; Alpha background
-(add-to-list 'default-frame-alist '(alpha-background . 80))
+  (add-to-list 'default-frame-alist '(alpha-background . 100))
+
+  ;; Doom Themes
+  (use-package doom-themes
+    :straight t
+    :demand t
+    :config
+    (doom-themes-visual-bell-config))
 
 ;; Doom Themes
 (use-package doom-themes
   :straight t
   :demand t
-  :config
-  (doom-themes-visual-bell-config))
-
-(load-theme 'doom-monokai-pro t)
-
-
-;; Doom Modeline
-(use-package doom-modeline
-  :straight t
-  :defer t
-  :hook (after-init . doom-modeline-mode)
-  :custom
-  (doom-modeline-major-mode-icon t)
-  (doom-modeline-major-mode-color-icon t)
-  (doom-modeline-buffer-state-icon t)
-  (doom-modeline-lsp-icon t)
-  (doom-modeline-lsp t)
-  (doom-modeline-time-live-icon t)
-  (doom-modeline-time-analogue-clock t)
-  (doom-modeline-buffer-name t)
-  (doom-modeline-column-zero-based t)
-  (doom-modeline-time-icon t)
-  (doom-modeline-minor-modes nil)
-  (doom-modeline-icon t)
-  (doom-modeline-buffer-file-name-style 'truncate-except-project)
-  (doom-modeline-lsp t))
-
-
-;; All-the-icons on Vertico/Marginalia completion
-(use-package all-the-icons-completion
-  :straight t
-  :after (marginalia all-the-icons)
-  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
   :init
-  (all-the-icons-completion-mode)
+  ;; Load theme early to avoid white flash on startup
+  (load-theme 'doom-monokai-pro t)
+
   :config
-  ;; Ensure icons work properly in completion
-  (setq all-the-icons-completion-method 'all-the-icons-completion-method-ivy)
-  ;; Force icon refresh
-  (add-hook 'after-init-hook
-            (lambda ()
-              (when (display-graphic-p)
-                (all-the-icons-completion-mode 1)))))
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+
+  ;; Corrects and improves org-mode colors
+  (doom-themes-org-config)
+
+  ;; Optional: nicer bold/italic styling
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t))
 
 
 
-;; Font settings
-(set-face-attribute
- 'default
- nil
- :height 120
- :family "FiraCode Nerd Font"
- :weight 'medium
- :width 'normal)
+
+  ;; All-the-icons on Vertico/Marginalia completion
+  (use-package all-the-icons-completion
+    :straight t
+    :after (marginalia all-the-icons)
+    :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
+    :init
+    (all-the-icons-completion-mode)
+    :config
+    ;; Ensure icons work properly in completion
+    (setq all-the-icons-completion-method 'all-the-icons-completion-method-ivy)
+    ;; Force icon refresh
+    (add-hook 'after-init-hook
+              (lambda ()
+                (when (display-graphic-p)
+                  (all-the-icons-completion-mode 1)))))
+
+
+
+  ;; Font settings
+  (set-face-attribute
+   'default
+   nil
+   :height 120
+   :family "FiraCode Nerd Font"
+   :weight 'medium
+   :width 'normal)
 
 (use-package all-the-icons
   :straight t)
@@ -328,7 +343,11 @@
          (bg (face-attribute 'default :background nil 'default)))
     (when (treemacs-get-local-window)
       (with-current-buffer (treemacs-get-local-buffer)
-        (face-remap-add-relative 'default `(:background ,bg :inherit default))
+        ;; Clear prior remaps: repeated hooks stacked `face-remap-add-relative' and
+        ;; broke face inheritance (e.g. gnus-group-news-low cycle with doom-theme).
+        (when (fboundp 'face-remap-reset-base)
+          (face-remap-reset-base 'default))
+        (face-remap-add-relative 'default `(:background ,bg))
         (set-frame-parameter (window-frame (treemacs-get-local-window))
                              'alpha-background alpha)))))
 
@@ -374,61 +393,8 @@
   :straight t
   :after (treemacs magit))
 
-;; LSP integration
-(use-package lsp-treemacs
-  :after (treemacs lsp-mode)
-  :config
-  (lsp-treemacs-sync-mode 1))  ;; example function to keep Treemacs in sync with LSP info
-
 (use-package treemacs-icons-dired
   :straight t)
-
-(use-package centaur-tabs
-  :straight t
-  :bind
-  (("C-c n" . centaur-tabs-forward)
-   ("C-c b" . centaur-tabs-backward))
-  :init
-  (setq centaur-tabs-style "alternate"
-        centaur-tabs-set-icons t
-        centaur-tabs-icon-type 'all-the-icons
-        centaur-tabs-set-bar 'over
-        centaur-tabs-close-button "X"
-        centaur-tabs-modified-marker "*"
-        centaur-tabs-change-fonts "Fira Code NerdFont")
-  :hook
-  (prog-mode . centaur-tabs-mode)
-  :config
-  ;; Function that decides which buffers should be hidden
-  (defun centaur-tabs-hide-tab (x)
-    "Do not show buffer X in tabs."
-    (let ((name (format "%s" x)))
-      (or
-       ;; Current window is dedicated
-       (window-dedicated-p (selected-window))
-       ;; Buffer name blacklist
-       (string-prefix-p "*epc" name)
-       (string-prefix-p "*helm" name)
-       (string-prefix-p "*scratch*" name)
-       (string-prefix-p "*Helm" name)
-       (string-prefix-p "*Compile-Log*" name)
-       (string-prefix-p "*lsp" name)
-       (string-prefix-p "*company" name)
-       (string-prefix-p "*Flycheck" name)
-       (string-prefix-p "*tramp" name)
-       (string-prefix-p " *Mini" name)
-       (string-prefix-p "*help" name)
-       (string-prefix-p "*Help" name)
-       (string-prefix-p "*straight" name)
-       (string-prefix-p " *temp" name)
-       (string-prefix-p "*mybuf" name)
-       ;; Magit buffers (but not file-visiting ones)
-       (and (string-prefix-p "magit" name)
-            (not (file-name-extension name))))))
-  ;; Tell centaur-tabs to use the function
-  (setq centaur-tabs-hide-function #'centaur-tabs-hide-tab)
-  ;; Enable globally
-  (centaur-tabs-mode 1))
 
 (use-package general
   :demand t ;; ensures it's loaded immediately
@@ -467,12 +433,18 @@
   (evil-set-undo-system 'undo-redo)
   (evil-global-set-key 'motion "j" 'evil-next-visual-line)
   (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-  (evil-define-key 'normal lsp-mode-map "gr" 'lsp-find-references)
-  (evil-define-key 'normal lsp-mode-map "gd" 'lsp-find-definition)
+  (evil-define-key 'normal prog-mode-map "gr" 'xref-find-references)
+  (evil-define-key 'normal prog-mode-map "gd" 'xref-find-definitions)
   (evil-set-initial-state 'dashboard-mode 'normal)
   (evil-set-initial-state 'message-buffer-mode 'normal))
 
 (define-key evil-normal-state-map (kbd "Q") (lambda () (interactive) (kill-current-buffer)))
+
+;; Magit before evil-collection: avoids void `magit-auto-revert-mode' when Evil
+;; initializes magit bindings (byte-code can touch that variable).
+(use-package magit
+  :straight t
+  :demand t)
 
 ;; Evil Nerd Commenter
 (use-package evil-nerd-commenter
@@ -484,7 +456,7 @@
 ;; Evil Collection
 (use-package evil-collection
   :straight t
-  :after evil
+  :after (evil magit)
   :config
   (evil-collection-init))
 
@@ -548,8 +520,6 @@
 
 (use-package corfu
   :straight t
-  :hook
-  (lsp-after-initialize-hook . corfu-mode)
   :custom
   (corfu-cycle t)
   (corfu-auto t)
@@ -608,26 +578,36 @@
   (kind-icon-reset-cache))
 
 (use-package cape
-  :straight t
-  :defer t
-  :bind (("C-c v p" . completion-at-point)
-         ("C-c v d" . cape-dabbrev)
-         ("C-c v f" . cape-file))
-  :config
-  (setq completion-at-point-functions
-        (list
-         #'cape-dabbrev
-         #'cape-file
-         #'cape-keyword
-         #'cape-symbol
-         #'cape-history)))
+    :straight t
+    :defer t
+    :bind (("C-c v p" . completion-at-point)
+           ("C-c v d" . cape-dabbrev)
+           ("C-c v f" . cape-file))
+    :config
+    (setq completion-at-point-functions
+          (list
+           #'cape-dabbrev
+           #'cape-file
+           #'cape-keyword
+           #'cape-symbol
+           #'cape-history)))
+
+(add-hook 'eglot-managed-mode-hook
+          (lambda ()
+            (setq-local completion-at-point-functions
+                        (list (cape-capf-super
+                               #'eglot-completion-at-point
+                               #'cape-dabbrev
+                               #'cape-file)))))
 
 (use-package orderless
   :straight t
   :custom
-  (setq completion-styles '(orderless basic)
-        completion-category-defaults nil
-        completion-category-overrides '((file (styles partial-completion)))))
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides
+   '((file (styles partial-completion))
+     (eglot (styles orderless flex)))))
 
 (use-package savehist
   :straight t
@@ -692,6 +672,11 @@
   (org-mode . rainbow-delimiters-mode))
 
 (use-package org
+  :init
+  ;; Built-in default `org-modules' includes `ol-gnus'; require fails without Gnus.
+  ;; Set before Org loads so `defcustom' does not re-enable it.
+  (setq org-modules
+        '(ol-doi ol-w3m ol-bbdb ol-bibtex ol-docview ol-info ol-irc ol-mhe ol-rmail ol-eww))
   :config
   (setq org-agenda-files '("~/Agenda/agenda.org"))
   (setq org-ellipsis " ▾"))
@@ -809,9 +794,6 @@
   (global-set-key (kbd "C-c v p") #'multi-vterm-prev)
   (global-set-key (kbd "C-c v c") #'multi-vterm-next))
 
-(use-package magit
-  :straight t)
-
 (use-package diff-hl
   :straight t
   :init
@@ -857,6 +839,10 @@
   ;; Optional: Make the face look a bit more subtle (dimmed)
   (set-face-attribute 'blamer-face nil :foreground "#7a88cf" :italic t))
 
+(use-package diff-hl
+  :init
+  (global-diff-hl-mode))
+
 (use-package smartparens
   :straight t
   :config
@@ -869,9 +855,11 @@
   :init (global-flycheck-mode))
 
 (use-package treesit
-  :identity t
+  :straight nil
+  :demand t
   :config
-  ;; 1. Define where to find the grammars
+
+  ;; Grammar sources
   (setq treesit-language-source-alist
         '((bash "https://github.com/tree-sitter/tree-sitter-bash")
           (css "https://github.com/tree-sitter/tree-sitter-css")
@@ -879,354 +867,175 @@
           (html "https://github.com/tree-sitter/tree-sitter-html")
           (go "https://github.com/tree-sitter/tree-sitter-go")
           (gomod "https://github.com/camdencheek/tree-sitter-go-mod")
-          (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+          (javascript "https://github.com/tree-sitter/tree-sitter-javascript")
           (json "https://github.com/tree-sitter/tree-sitter-json")
-          (make "https://github.com/alemuller/tree-sitter-make")
           (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-          (prisma "https://github.com/victorhqc/tree-sitter-prisma")
           (python "https://github.com/tree-sitter/tree-sitter-python")
           (rust "https://github.com/tree-sitter/tree-sitter-rust")
-          (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-          (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+          (typescript "https://github.com/tree-sitter/tree-sitter-typescript"  "typescript/src")
+          (tsx "https://github.com/tree-sitter/tree-sitter-typescript"  "tsx/src")
           (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 
-  ;; 2. Logic to auto-install missing grammars
-  (defun my/setup-install-grammars ()
-    "Install all defined tree-sitter grammars if they aren't present."
-    (interactive)
+  ;; Auto install missing grammars
+  (defun my/ensure-treesit-grammars ()
     (dolist (grammar treesit-language-source-alist)
       (unless (treesit-language-available-p (car grammar))
         (treesit-install-language-grammar (car grammar)))))
 
-  ;; 3. Remap standard modes to TS modes automatically
+  (add-hook 'emacs-startup-hook #'my/ensure-treesit-grammars)
+
+  ;; Modern TS mode remaps
   (setq major-mode-remap-alist
         '((bash-mode . bash-ts-mode)
-          (go-mode . go-ts-mode)
-          (go-dot-mod-mode . go-mod-ts-mode)
-          (js-mode . js-ts-mode)
-          (yaml-mode . yaml-ts-mode)
           (css-mode . css-ts-mode)
-          (c-mode . c-ts-mode)
-          (c++-mode . c++-ts-mode)
+          (js-mode . js-ts-mode)
           (js-json-mode . json-ts-mode)
           (python-mode . python-ts-mode)
-          (rust-mode . rust-ts-mode)
           (typescript-mode . typescript-ts-mode)
-          (yaml-mode       . yaml-ts-mode)
-          (dockerfile-mode . dockerfile-ts-mode)
-          (terraform-mode  . terraform-ts-mode)
-          (toml-mode       . toml-ts-mode)
-          (json-mode . json-ts-mode))))
+          (typescript-tsx-mode . tsx-ts-mode)
+          (go-mode . go-ts-mode)
+          (go-dot-mod-mode . go-mod-ts-mode)
+          (rust-mode . rust-ts-mode)
+          (yaml-mode . yaml-ts-mode)
+          (json-mode . json-ts-mode)
+          (dockerfile-mode . dockerfile-ts-mode)))
 
-;; 4. Prisma Specific Setup
-(use-package prisma-ts-mode
-  :straight (:host github :repo "nverno/prisma-ts-mode")
-  :mode "\\.prisma\\'"
-  :hook (prisma-ts-mode . lsp-deferred)
-  :config
-  ;; Register the prisma lsp client for the new ts-mode
-  (with-eval-after-load 'lsp-mode
-    (lsp-register-client
-     (make-lsp-client :new-connection (lsp-stdio-connection '("prisma-language-server" "--stdio"))
-                      :major-modes '(prisma-ts-mode prisma-mode)
-                      :priority 1
-                      :server-id 'prisma-ls))))
+  ;; Explicit file associations
+  (add-to-list 'auto-mode-alist '("\\.tsx\\'" . tsx-ts-mode))
+  (add-to-list 'auto-mode-alist '("\\.jsx\\'" . js-ts-mode)))
 
-(use-package lsp-mode
-  :straight t
-  :hook((rustic-mode . lsp)
-        (python-ts-mode . lsp)
-        (typescript-ts-mode . lsp)
-        (jtsx-tsx-mode . lsp)
-        (go-ts-mode . lsp))
-  :bind(:map lsp-mode-map ("C-c C-f" . lsp-format-buffer))
+  ;; 4. Prisma Specific Setup
+  (use-package prisma-ts-mode
+    :straight (:host github :repo "nverno/prisma-ts-mode")
+    :mode "\\.prisma\\'"
+    :hook (prisma-ts-mode . eglot-ensure))
+    ;; Register the prisma lsp client for the new ts-mode
+
+(use-package eldoc-box
+  :hook (eglot-managed-mode . eldoc-box-hover-mode)
   :custom
-  ;; Performance optimizations for faster completion
-  (setq lsp-completion-provider :capf)
-  (setq lsp-prefer-capf t)
-  (setq lsp-enable-completion-at-point t)
-  (setq lsp-idle-delay 0.05)  ; Faster response (50ms)
-  (setq lsp-log-io nil)  ; Disable LSP logging for performance
-  (setq lsp-keep-workspace-alive nil)  ; Don't keep workspace alive unnecessarily
-  (setq lsp-enable-snippet nil)  ; Disable snippets for faster completion
-  (setq lsp-enable-indentation nil)  ; Disable LSP indentation
-  (setq lsp-enable-on-type-formatting nil)  ; Disable on-type formatting
-  (setq lsp-enable-text-document-color nil)  ; Disable color provider
-  (setq lsp-enable-folding nil)  ; Disable folding
-  (setq lsp-enable-dap-auto-configure nil)  ; Disable DAP auto-configure
-  (setq lsp-diagnostics-provider :none)  ; Disable LSP diagnostics (use flycheck)
-  ;;(setq lsp-enable-symbol-highlighting nil)  ; Disable symbol highlighting
-  (setq lsp-lens-enable nil)  ; Disable code lenses
-  (setq lsp-signature-auto-activate nil)
-  (setq lsp-modeline-diagnostics-enable nil)
-  (setq lsp-typescript-format-enable nil)
-  (setq lsp-javascript-format-enable nil)
-  (setq lsp-modeline-code-actions-enable nil)
-  (setq lsp-headerline-imenu-mode t)
-  (setq lsp-keymap-prefix "C-c l")
-  (setq lsp-eldoc-enable-hover t)
-  (setq lsp-headerline-breadcrum-enable t)
-  (setq lsp-rust-analyzer-server-display-inlay-hints t)
-  (setq lsp-rust-analyzer-cargo-watch-command "clippy")
-  (setq lsp-enable-code-actions t)
-  (setq lsp-response-timeout 10)  ; Reduce timeout
-  (setq lsp-print-io nil)  ; Disable I/O printing
-  (setq lsp-trace nil)  ; Disable tracing
-  (setq lsp-print-performance nil)  ; Disable performance logging
-  (setq lsp-completion-cache-expiry 300)  ; Cache completions for 5 minutes
-  (setq lsp-completion-cache-cleanup-interval 600)  ; Clean cache every 10 minutes
-  (setq lsp-completion-cache-cleanup-threshold 100)  ; Clean when cache has 100+ items
-  ;; Optimize completion sorting
-  (setq lsp-completion-sort-function 'lsp-completion-sort-alphabetically)
-  ;; Reduce memory usage
-  (setq lsp-completion-cache-size 50)  ; Limit cache size
-  (setq lsp-completion-cache-cleanup-threshold 25)); Clean more frequently
-:config
-(add-hook 'lsp-after-initialize-hook
-          (lambda ()
-            (setq-local before-save-hook (cons 'lsp-format-buffer before-save-hook))))
+  (eldoc-box-max-pixel-height 400)
+  (eldoc-box-max-pixel-width 600))
 
-
-(use-package lsp-ui
+(use-package rust-mode
   :straight t
-  :commands (lsp-ui-mode)
-  :custom
-  ;;Sideline
-  (lsp-ui-sideline-show-diagnostics nil)
-  (lsp-ui-sideline-enable nil)
-  (lsp-ui-sideline-show-hover t)
-  (lsp-ui-sideline-show-code-actions t)
-  (lsp-ui-sideline-delay 0.1)
-  (lsp-ui-update-mode 'line)
-  ;;Documentantion
-  (lsp-ui-doc-enable t)
-  (lsp-ui-doc-header t)
-  (lsp-ui-doc-delay 0.2)
-  (lsp-ui-doc-position 'bottom)
-  (lsp-ui-doc-show-with-cursor nil)
-  ;; IMenu
-  (lsp-ui-imenu-window-width 0)
-  (lsp-ui-imenu--custom-mode-line-format nil)
-  :hook (lsp-mode . lsp-ui-mode))
+  :defer t)
 
-;; Additional performance optimizations for LSP
-(defun my/lsp-performance-setup ()
-  "Setup LSP for maximum performance."
-  ;; Disable expensive features
-  (setq lsp-enable-folding nil)
-  (setq lsp-enable-text-document-color nil)
-  (setq lsp-lens-enable nil)
-  (setq lsp-signature-auto-activate nil)
-  ;; Optimize completion
-  (setq lsp-completion-cache-expiry 300)
-  (setq lsp-completion-cache-cleanup-interval 600)
-  (setq lsp-completion-cache-cleanup-threshold 50)
-  (setq lsp-completion-cache-size 25)
-  ;; Reduce I/O overhead
-  (setq lsp-log-io nil)
-  (setq lsp-print-io nil)
-  (setq lsp-trace nil)
-  (setq lsp-print-performance nil)
-  ;; Optimize response times
-  (setq lsp-response-timeout 5)
-  (setq lsp-idle-delay 0.05))
-
-;; Apply performance settings when LSP starts
-(add-hook 'lsp-mode-hook #'my/lsp-performance-setup)
-
-;; Alternative: Use Corfu instead of Company for faster completion
-(defun my/use-corfu-instead-of-company ()
-  "Switch to Corfu for faster completion."
-  (when (bound-and-true-p company-mode)
-    (company-mode -1))
-  (when (bound-and-true-p corfu-mode)
-    (corfu-mode 1)))
-
-;; Uncomment the line below to automatically use Corfu instead of Company
-(add-hook 'lsp-mode-hook #'my/use-corfu-instead-of-company)
-
-;; (use-package rustic
-;;   :straight t
-;;   :hook
-;;   (rust-ts-mode-hook . rustic-mode)
-;;   :bind (:map rustic-mode-map
-;;               ("C-c C-c r" . rustic-run)
-;;               ("C-c C-c t" . rustic-test)
-;;               ("C-c C-c c" . rustic-compile)
-;;               ("C-c C-c l" . rustic-clippy)))
-
-
-(use-package rustic
+(use-package go-mode
   :straight t
-  :init
-  ;; This is the magic line that makes rustic use tree-sitter
-  (setq rustic-treesitter-derive t)
-  :bind (:map rustic-mode-map
-              ("C-c C-c r" . rustic-run)
-              ("C-c C-c t" . rustic-test)
-              ("C-c C-c c" . rustic-compile)
-              ("C-c C-c l" . rustic-clippy))
-  :config
-  ;; Ensure rustic uses lsp-mode (it defaults to eglot in some versions)
-  (setq rustic-lsp-client 'lsp-mode))
+  :defer t)
 
-(use-package go-ts-mode
-  :mode "\\.go\\'"
-  :hook ((go-ts-mode . lsp-deferred)
-         (go-ts-mode . lsp-go-install-save-hooks))
-  :bind (:map go-ts-mode-map
-              ("C-c C-g" . gofmt))
-  :custom
-  (lsp-go-analyses
-   '((nilness . t)
-     (unusedwrite . t)
-     (unusedparams . t)))
-  :config
-  (add-to-list 'exec-path "~/go/bin")
-  (setq gofmt-command "goimports")
-  (defun lsp-go-install-save-hooks ()
-    (add-hook 'before-save-hook #'lsp-format-buffer t t)
-    (add-hook 'before-save-hook #'lsp-organize-imports t t)))
-
-(use-package typescript-mode
+(use-package python-mode
   :straight t
-  :hook ((typescript-mode . lsp-deferred)
-         (js-mode . lsp-deferred))
-  :config
-  (defun lsp-typescript-install-save-hooks ()
-    (add-hook 'before-save-hook #'lsp-format-buffer t t)
-    (add-hook 'before-save-hook #'lsp-organize-imports t t))
-  (add-hook 'typescript-mode-hook #'lsp-typescript-install-save-hooks)
-  (setq typescript-indent-level 2))
+  :defer t)
 
-;; Add specific setup for typescript-ts-mode
-(use-package typescript-ts-mode
-  :mode "\\.ts\\'"
-  :hook ((typescript-ts-mode . lsp-deferred))
-  :config
-  ;; Re-use the function if available, or define it if not.
-  ;; Since typescript-mode config defines it, we can just ensure it's loaded or redefine.
-  ;; Simpler: just add the hooks directly or make sure the function is visible.
-  (add-hook 'typescript-ts-mode-hook
-            (lambda ()
-              (add-hook 'before-save-hook #'lsp-format-buffer t t)
-              (add-hook 'before-save-hook #'lsp-organize-imports t t))))
+;; OCaml
+(use-package tuareg
+  :straight t
+  :defer t)
 
-(defun my-react-lsp-setup ()
-  "Setup LSP and save hooks for React (JSX/TSX) files."
-  (lsp-deferred)
-  (corfu-mode)
-  (lsp-typescript-install-save-hooks)
-  (hs-minor-mode))
-
-
+;; TypeScript / JavaScript / JSX / TSX (replaces typescript-mode + js2-mode)
 (use-package jtsx
   :straight t
-  :mode (("\\.jsx\\'" . jtsx-jsx-mode)
+  :defer t
+  :mode (("\\.js\\'"  . jtsx-jsx-mode)
+         ("\\.jsx\\'" . jtsx-jsx-mode)
+         ("\\.ts\\'"  . jtsx-typescript-mode)
          ("\\.tsx\\'" . jtsx-tsx-mode))
-  :commands jtsx-install-treesit-language
-  :hook ((jtsx-jsx-mode . my-react-lsp-setup)
-         (jtsx-tsx-mode . my-react-lsp-setup))
   :custom
-  (js-indent-level 2)
-  (typescript-ts-mode-indent-offset 2)
-  (jtsx-switch-indent-offset 0)
-  (jtsx-indent-statement-block-regarding-standalone-parent nil)
-  (jtsx-jsx-element-move-allow-step-out t)
-  (jtsx-enable-jsx-electric-closing-element t)
-  (jtsx-enable-electric-open-newline-between-jsx-element-tags t)
-  (jtsx-enable-jsx-element-tags-auto-sync t)
-  (jtsx-enable-all-syntax-highlighting-features t)
-  :config
-  (defun jtsx-bind-keys-to-mode-map (mode-map)
-    "Bind keys to MODE-MAP."
-    (define-key mode-map (kbd "C-c C-j") 'jtsx-jump-jsx-element-tag-dwim)
-    (define-key mode-map (kbd "C-c j o") 'jtsx-jump-jsx-opening-tag)
-    (define-key mode-map (kbd "C-c j c") 'jtsx-jump-jsx-closing-tag)
-    (define-key mode-map (kbd "C-c j r") 'jtsx-rename-jsx-element)
-    (define-key mode-map (kbd "C-c <down>") 'jtsx-move-jsx-element-tag-forward)
-    (define-key mode-map (kbd "C-c <up>") 'jtsx-move-jsx-element-tag-backward)
-    (define-key mode-map (kbd "C-c C-<down>") 'jtsx-move-jsx-element-forward)
-    (define-key mode-map (kbd "C-c C-<up>") 'jtsx-move-jsx-element-backward)
-    (define-key mode-map (kbd "C-c C-S-<down>") 'jtsx-move-jsx-element-step-in-forward)
-    (define-key mode-map (kbd "C-c C-S-<up>") 'jtsx-move-jsx-element-step-in-backward)
-    (define-key mode-map (kbd "C-c j w") 'jtsx-wrap-in-jsx-element)
-    (define-key mode-map (kbd "C-c j u") 'jtsx-unwrap-jsx)
-    (define-key mode-map (kbd "C-c j d") 'jtsx-delete-jsx-node))
-  
-  (defun jtsx-bind-keys-to-jtsx-jsx-mode-map ()
-    (jtsx-bind-keys-to-mode-map jtsx-jsx-mode-map))
+  (jtsx-switch-ts-backend 'treesit))
 
-  (defun jtsx-bind-keys-to-jtsx-tsx-mode-map ()
-    (jtsx-bind-keys-to-mode-map jtsx-tsx-mode-map))
-
-  (add-hook 'jtsx-jsx-mode-hook 'jtsx-bind-keys-to-jtsx-jsx-mode-map)
-  (add-hook 'jtsx-tsx-mode-hook 'jtsx-bind-keys-to-jtsx-tsx-mode-map))
-
-(use-package python
-  :straight t
-  :custom
-  (python-indent-offset 4)
-  (python-shell-interpreter "python3"))
-
-;; Optional: format buffer on save (if server supports it)
-(add-hook 'python-mode-hook
-          (lambda ()
-            (add-hook 'before-save-hook #'lsp-format-buffer nil t)))
+;; Solidity
 
 (use-package solidity-mode
   :straight t
+  :defer t)
+
+;; C / C++ — built into Emacs via cc-mode, no extra package needed.
+;; c-ts-mode and c++-ts-mode are also built-in (Emacs 29+).
+;; cmake support
+(use-package cmake-mode
+  :straight t
+  :defer t)
+
+;; Install grammars automatically on first use.
+;; Run M-x treesit-install-language-grammar for each language on first setup.
+(use-package treesit
+  :straight nil
+  :custom
+  (treesit-font-lock-level 4)
   :config
-  (setq solidity-solc-path "/usr/bin/solc")
-  (setq solidity-flycheck-solc-checker-active t))
+  (setq treesit-language-source-alist
+        '((bash       . ("https://github.com/tree-sitter/tree-sitter-bash"))
+          (go         . ("https://github.com/tree-sitter/tree-sitter-go"))
+          (gomod      . ("https://github.com/camdencheek/tree-sitter-go-mod"))
+          (javascript . ("https://github.com/tree-sitter/tree-sitter-javascript" "master" "src"))
+          (typescript . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src"))
+          (tsx        . ("https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src"))
+          (python     . ("https://github.com/tree-sitter/tree-sitter-python"))
+          (rust       . ("https://github.com/tree-sitter/tree-sitter-rust"))
+          (toml       . ("https://github.com/tree-sitter/tree-sitter-toml"))
+          (json       . ("https://github.com/tree-sitter/tree-sitter-json"))
+          (yaml       . ("https://github.com/ikatyang/tree-sitter-yaml"))
+          (css        . ("https://github.com/tree-sitter/tree-sitter-css"))
+          (html       . ("https://github.com/nickel-lang/tree-sitter-html"))
+          (c          . ("https://github.com/tree-sitter/tree-sitter-c"))
+          (cpp        . ("https://github.com/tree-sitter/tree-sitter-cpp"))))
 
-(use-package sol-mode
-  :straight t
-  :mode "\\.sol\\'")
+  ;; Remap classic major modes to their tree-sitter equivalents.
+  ;; This makes Emacs auto-activate -ts-mode when a grammar is available.
+  (setq major-mode-remap-alist
+        '((python-mode     . python-ts-mode)
+          (js-mode         . js-ts-mode)
+          (javascript-mode . js-ts-mode)
+          (typescript-mode . typescript-ts-mode)
+          (go-mode         . go-ts-mode)
+          (rust-mode       . rust-ts-mode)
+          (bash-mode       . bash-ts-mode)
+          (sh-mode         . bash-ts-mode)
+          (css-mode        . css-ts-mode)
+          (json-mode       . json-ts-mode)
+          (yaml-mode       . yaml-ts-mode)
+          (c-mode          . c-ts-mode)
+          (c++-mode        . c++-ts-mode))))
 
-(defun my/org-format-all-elisp-blocks ()
-  "Indent all emacs-lisp source blocks in the current Org buffer."
-  (interactive)
-  (org-babel-map-src-blocks nil
-    (when (string= lang "emacs-lisp")
-      (org-babel-do-in-edit-buffer
-       (indent-region (point-min) (point-max))))))
+;; tsx files -> tsx-ts-mode
+(add-to-list 'auto-mode-alist '("\\.tsx\\'" . tsx-ts-mode))
+;; js files -> js-ts-mode (overrides any earlier entry)
+(add-to-list 'auto-mode-alist '("\\.js\\'"  . js-ts-mode) t)
+(add-to-list 'auto-mode-alist '("\\.mjs\\'" . js-ts-mode) t)
+(add-to-list 'auto-mode-alist '("\\.cjs\\'" . js-ts-mode) t)
 
-(use-package yaml-ts-mode
-  :straight t
-  :mode ("\\.ya?ml\\'" . yaml-ts-mode)
-  :hook (yaml-ts-mode . lsp-deferred))
-
-(use-package dockerfile-ts-mode
-  :straight t
-  :mode ("Dockerfile\\'" . dockerfile-ts-mode)
-  :hook (dockerfile-ts-mode . lsp-deferred))
-
-(use-package terraform-mode
-  :straight t
-  :mode ("\\.tf\\'" . terraform-mode)
-  :hook ((terraform-mode . lsp-deferred)
-         (terraform-mode . terraform-format-on-save-mode)))
-
-(use-package toml-ts-mode
-  :straight t
-  :mode ("\\.toml\\'" . toml-ts-mode)
-  :hook (toml-ts-mode . lsp-deferred))
-
-(use-package apheleia
-  :straight t
+(use-package eglot
+  :straight nil
+  :hook ((rust-ts-mode . eglot-ensure)
+         (go-ts-mode . eglot-ensure)
+         (typescript-ts-mode . eglot-ensure)
+         (tsx-ts-mode . eglot-ensure)
+         (js-ts-mode . eglot-ensure)
+         (python-ts-mode . eglot-ensure)
+         (tuareg-mode . eglot-ensure)
+         (solidity-mode . eglot-ensure)
+         (c-ts-mode . eglot-ensure)
+         (c++-ts-mode . eglot-ensure))
   :config
-  (apheleia-global-mode +1))
-
-(with-eval-after-load 'apheleia
-  (setf (alist-get 'prettier-tsx apheleia-formatters)
-        '(("prettier"
-           "--stdin-filepath" filepath
-           "--parser" "typescriptreact"))))
-
-(with-eval-after-load 'apheleia
-  (setf (alist-get 'jtsx-tsx-mode apheleia-mode-alist) 'prettier-tsx
-        (alist-get 'typescript-ts-mode apheleia-mode-alist) 'prettier
-        (alist-get 'js-ts-mode apheleia-mode-alist) 'prettier
-        (alist-get 'json-ts-mode apheleia-mode-alist) 'prettier
-        (alist-get 'css-ts-mode apheleia-mode-alist) 'prettier))
+  ;; Server programs
+  (add-to-list 'eglot-server-programs '(rust-ts-mode . ("rust-analyzer")))
+  (add-to-list 'eglot-server-programs '(go-ts-mode . ("gopls")))
+  (add-to-list 'eglot-server-programs
+               '((typescript-ts-mode tsx-ts-mode js-ts-mode)
+                 . ("typescript-language-server" "--stdio")))
+  (add-to-list 'eglot-server-programs
+               '(python-ts-mode . ("basedpyright-langserver" "--stdio")))
+  (add-to-list 'eglot-server-programs '(tuareg-mode . ("ocamllsp")))
+  (add-to-list 'eglot-server-programs
+               '(solidity-mode . ("nomicfoundation-solidity-language-server" "--stdio")))
+  ;; C / C++
+  (add-to-list 'eglot-server-programs
+               '((c-ts-mode c++-ts-mode) . ("clangd")))
+  ;; Performance
+  (setq eglot-events-buffer-size 0)
+  (setq eglot-sync-connect nil)
+  (setq eglot-autoshutdown t)
+  ;; Suppress verbose JSON-RPC logging entirely
+  (fset #'jsonrpc--log-event #'ignore))

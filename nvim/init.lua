@@ -28,6 +28,5 @@ require("lazy").setup({
 	require("plugins.indentblankline"),
 	require("plugins.misc"),
 	require("plugins.inline-diagnostic"),
-	require("plugins.notify"),
 	require("plugins.toggleterm"),
 })
