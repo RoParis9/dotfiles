@@ -3,7 +3,6 @@ return {
     'akinsho/toggleterm.nvim',
     version = "*",
     opts = {
-      -- Terminal configuration
       size = function(term)
         if term.direction == "horizontal" then
           return 15
@@ -20,18 +19,8 @@ return {
       insert_mappings = true,
       persist_size = true,
       direction = "horizontal",
-      size = 15,
-    })
-    
-    -- Toggle horizontal terminal with <leader>t
-    vim.keymap.set("n", "<leader>t", function()
-      horizontal_term:toggle()
-    end, { desc = "Toggle horizontal terminal" })
-    
-    
-    -- Optional: Create a floating terminal with <leader>tf
-    local float_term = Terminal:new({
-      direction = "float",
+      close_on_exit = true,
+      shell = vim.o.shell,
       float_opts = {
         border = "curved",
         winblend = 0,
@@ -44,19 +33,22 @@ return {
     config = function(_, opts)
       require("toggleterm").setup(opts)
 
-      -- Keymaps for terminal
       local Terminal = require("toggleterm.terminal").Terminal
 
-      -- Create a horizontal terminal that opens at the bottom
-      local horizontal_term = Terminal:new({
+      hterm = Terminal:new({
         direction = "horizontal",
         size = 15,
       })
 
-      -- Toggle horizontal terminal with <leader>t
-      vim.keymap.set("n", "<leader>t", function()
-        horizontal_term:toggle()
-      end, { desc = "Toggle horizontal terminal" })
+      vterm = Terminal:new({
+        direction = "vertical",
+        size = math.floor(vim.o.columns * 0.4),
+      })
+
+      float_term = Terminal:new({
+        direction = "float",
+        float_opts = opts.float_opts,
+      })
     end,
-  }
+  },
 }

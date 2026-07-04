@@ -210,7 +210,7 @@
         make-backup-files nil))
 
 ;; Alpha background
-  (add-to-list 'default-frame-alist '(alpha-background . 100))
+  (add-to-list 'default-frame-alist '(alpha-background . 80))
 
   ;; Doom Themes
   (use-package doom-themes
