@@ -75,6 +75,7 @@
               (setq buffer-auto-save-file-name nil
                     make-backup-files nil))))
 
+
 ;; Core Emacs settings
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 2)
@@ -209,35 +210,62 @@
         auto-save-default nil
         make-backup-files nil))
 
-;; Alpha background
-  (add-to-list 'default-frame-alist '(alpha-background . 80))
-
-  ;; Doom Themes
-  (use-package doom-themes
-    :straight t
-    :demand t
-    :config
-    (doom-themes-visual-bell-config))
+  ;; Alpha background
+  (add-to-list 'default-frame-alist '(alpha-background . 70))
 
 ;; Doom Themes
+;;
+;; Emacs 31 forbids face inheritance cycles (xfaces.c). Older doom-themes
+;; (including 2.3.0 @ 376cf4b) set:
+;;   gnus-group-news-low-empty → gnus-group-news-low
+;; while Emacs gnus.el defines:
+;;   gnus-group-news-low → gnus-group-news-low-empty
+;; That cycle is detected when any child frame is created (eldoc-box, corfu,
+;; etc.). Fixed upstream in doomemacs/themes#875 by making
+;; gnus-group-news-low-empty inherit gnus-group-mail-1-empty instead.
+;; Prefer: M-x straight-pull-package RET doom-themes RET, then rebuild.
+;; The setcdr below is a safe local patch until that update is installed.
 (use-package doom-themes
   :straight t
   :demand t
   :init
-  ;; Load theme early to avoid white flash on startup
-  (load-theme 'doom-monokai-pro t)
-
-  :config
-  ;; Enable flashing mode-line on errors
-  (doom-themes-visual-bell-config)
-
-  ;; Corrects and improves org-mode colors
-  (doom-themes-org-config)
-
-  ;; Optional: nicer bold/italic styling
   (setq doom-themes-enable-bold t
-        doom-themes-enable-italic t))
+        doom-themes-enable-italic t)
+  :config
+  ;; Break Emacs 31 ↔ doom-themes gnus face cycle (see comment above).
+  (when (boundp 'doom-themes-base-faces)
+    (setf (alist-get 'gnus-group-news-low-empty doom-themes-base-faces)
+          '(:inherit 'gnus-group-mail-1-empty :weight 'normal)))
+  ;; Only one theme enabled; load-theme does not disable others by default.
+  (mapc #'disable-theme (copy-sequence custom-enabled-themes))
+  (load-theme 'doom-monokai-pro t)
+  (doom-themes-visual-bell-config)
+  (doom-themes-org-config))
 
+
+ (use-package doom-modeline
+:ensure t
+:init (doom-modeline-mode 1)
+:config
+;; Set a clean, readable height
+(setq doom-modeline-height 25)
+
+;; Avoid heavy HUD indicators or unnecessary extras
+(setq doom-modeline-hud nil)
+
+;; Simplify file path display (options: 'buffer-name, 'file-name, 'truncate-upto-project, etc.)
+(setq doom-modeline-buffer-file-name-style 'truncate-except-project)
+
+;; Disable minor modes to keep the modeline clean and fast
+(setq doom-modeline-minor-modes nil)
+
+;; Display word count automatically in relevant modes
+(setq doom-modeline-enable-word-count t)
+
+;; Use modern nerd-icons (make sure to run M-x nerd-icons-install-fonts first)
+(setq doom-modeline-icon t)
+(setq doom-modeline-major-mode-icon t)
+(setq doom-modeline-major-mode-color-icon t))
 
 
 
@@ -267,6 +295,8 @@
    :family "FiraCode Nerd Font"
    :weight 'medium
    :width 'normal)
+
+
 
 (use-package all-the-icons
   :straight t)
@@ -396,6 +426,10 @@
 (use-package treemacs-icons-dired
   :straight t)
 
+
+
+
+
 (use-package general
   :demand t ;; ensures it's loaded immediately
   :config
@@ -408,6 +442,8 @@
 (my/leader-keys
   "e" '(treemacs :which-key "Toggle file explorer")
   "RET" '(consult-bookmark :which-key "Consult Bookmarks"))
+
+
 
 (use-package gcmh
   :straight t
@@ -460,6 +496,7 @@
   :config
   (evil-collection-init))
 
+
 (use-package which-key
   :straight t
   :init
@@ -482,6 +519,7 @@
   (avy-timeout-secs 0.3)
   :config
   (avy-setu'p-default))
+
 
 (use-package yasnippet
   :straight t
@@ -518,10 +556,12 @@
 ;;   (unless (require 'all-the-icons nil t)
 ;;     (ignore-errors (all-the-icons-install-fonts t))))
 
+
 (use-package corfu
   :straight t
   :custom
   (corfu-cycle t)
+  (corfu-preselect 'prompt)
   (corfu-auto t)
   (corfu-auto-prefix 1)  ; Start completion after 1 character
   (corfu-auto-delay 0.0)  ; No delay for auto-completion
@@ -561,6 +601,8 @@
   
   (setq corfu-auto-exclude-predicate #'my/corfu-auto-exclude-predicate))
 
+
+
 (use-package svg-lib :straight t)
 
 (use-package kind-icon
@@ -577,7 +619,10 @@
   (require 'kind-icon)
   (kind-icon-reset-cache))
 
-(use-package cape
+
+
+
+  (use-package cape
     :straight t
     :defer t
     :bind (("C-c v p" . completion-at-point)
@@ -599,6 +644,8 @@
                                #'eglot-completion-at-point
                                #'cape-dabbrev
                                #'cape-file)))))
+
+
 
 (use-package orderless
   :straight t
@@ -660,6 +707,7 @@
   (setq projectile-completion-system 'default)
   (projectile-mode +1))
 
+
 (use-package rainbow-mode
   :straight t
   :hook (prog-mode . rainbow-mode))
@@ -670,6 +718,8 @@
   (prog-mode . rainbow-delimiters-mode)
   (emacs-lisp-mode . rainbow-delimiters-mode)
   (org-mode . rainbow-delimiters-mode))
+
+
 
 (use-package org
   :init
@@ -721,43 +771,46 @@
   :config
   (setq org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
-(use-package vterm
-  :straight t
-  :commands vterm
-  :config
-  ;; --- Basic vterm settings ---
-  (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")
-  (setq vterm-shell "zsh")
-  (setq vterm-copy-mode t)
-  (setq vterm-max-scrollback 10000)
 
-  ;; --- Make Ctrl+V and Ctrl+Shift+V paste in vterm ---
-  (define-key vterm-mode-map (kbd "C-v") #'vterm-yank)
-  (define-key vterm-mode-map (kbd "C-S-v") #'vterm-yank)
+  (use-package vterm
+    :straight t
+    :commands vterm
+    :config
+    ;; --- Basic vterm settings ---
+    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")
+    (setq vterm-shell "zsh")
+    (setq vterm-copy-mode t)
+    (setq vterm-max-scrollback 10000)
 
-  ;; --- Automatically open vterm in current file's directory ---
-  (defun my/vterm-project-root-or-default ()
-    "Return current buffer's directory or default-directory."
-    (or (and buffer-file-name (file-name-directory buffer-file-name))
-        default-directory))
+    ;; --- Make Ctrl+V and Ctrl+Shift+V paste in vterm ---
+    (define-key vterm-mode-map (kbd "C-v") #'vterm-yank)
+    (define-key vterm-mode-map (kbd "C-S-v") #'vterm-yank)
 
-  (defun my/vterm-in-current-dir ()
-    "Open a vterm in the same directory as the current file."
-    (interactive)
-    (let ((default-directory (my/vterm-project-root-or-default)))
-      (vterm)))
+    ;; --- Automatically open vterm in current file's directory ---
+    (defun my/vterm-project-root-or-default ()
+      "Return current buffer's directory or default-directory."
+      (or (and buffer-file-name (file-name-directory buffer-file-name))
+          default-directory))
 
-  ;; Optionally rebind the default vterm key
-  (global-set-key (kbd "C-c v t") #'my/vterm-in-current-dir))
+    (defun my/vterm-in-current-dir ()
+      "Open a vterm in the same directory as the current file."
+      (interactive)
+      (let ((default-directory (my/vterm-project-root-or-default)))
+        (vterm)))
+
+    ;; Optionally rebind the default vterm key
+    (global-set-key (kbd "C-c v t") #'my/vterm-in-current-dir))
 
 (use-package vterm-toggle
   :straight t
   :bind
   (("C-`"   . my/vterm-toggle-in-current-directory)
-   ("C-c t" . my/vterm-toggle-in-current-directory)
-   :map vterm-mode-map
-   ("<C-return>" . vterm-toggle-insert-cd))
+   ("C-c t" . my/vterm-toggle-in-current-directory))
   :config
+  ;; --- FIXED: Safely bind the key inside vterm-mode-map only AFTER vterm loads ---
+  (with-eval-after-load 'vterm
+    (define-key vterm-mode-map (kbd "<C-return>") #'vterm-toggle-insert-cd))
+
   ;; Function: Toggle vterm in current file's directory
   (defun my/vterm-toggle-in-current-directory ()
     "Toggle vterm, and if opening, use the current buffer's directory."
@@ -794,6 +847,8 @@
   (global-set-key (kbd "C-c v p") #'multi-vterm-prev)
   (global-set-key (kbd "C-c v c") #'multi-vterm-next))
 
+
+
 (use-package diff-hl
   :straight t
   :init
@@ -805,13 +860,16 @@
   (add-hook 'magit-pre-refresh-hook 'diff-hl-magit-pre-refresh)
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh))
 
+
 (use-package git-timemachine
   :straight t
   :bind ("C-c g t" . git-timemachine))
 
+
 (use-package forge
   :straight t
   :after magit)
+
 
 (use-package smerge-mode
   :ensure nil ;; Built-in
@@ -822,6 +880,7 @@
     (smerge-mode 1)
     ;; You can use M-x smerge-keep-current, etc.
     (message "Smerge active: Use C-c ^ n/p to move, C-c ^ m/t to keep mine/theirs")))
+
 
 (use-package blamer
   :straight (blamer :type git :host github :repo "artawower/blamer.el")
@@ -839,6 +898,8 @@
   ;; Optional: Make the face look a bit more subtle (dimmed)
   (set-face-attribute 'blamer-face nil :foreground "#7a88cf" :italic t))
 
+
+
 (use-package diff-hl
   :init
   (global-diff-hl-mode))
@@ -853,6 +914,7 @@
 (use-package flycheck
   :straight t
   :init (global-flycheck-mode))
+
 
 (use-package treesit
   :straight nil
@@ -911,11 +973,13 @@
     :hook (prisma-ts-mode . eglot-ensure))
     ;; Register the prisma lsp client for the new ts-mode
 
+
 (use-package eldoc-box
   :hook (eglot-managed-mode . eldoc-box-hover-mode)
   :custom
   (eldoc-box-max-pixel-height 400)
   (eldoc-box-max-pixel-width 600))
+
 
 (use-package rust-mode
   :straight t
@@ -1039,3 +1103,18 @@
   (setq eglot-autoshutdown t)
   ;; Suppress verbose JSON-RPC logging entirely
   (fset #'jsonrpc--log-event #'ignore))
+
+(use-package nix-ts-mode
+  :mode "\\.nix\\'"
+  :hook (nix-ts-mode . lsp-deferred) ; optional if you use lsp-mode
+  :config
+  ;; Ensure the grammar source is known if it needs manual installation
+  (add-to-list 'treesit-language-source-alist
+               '(nix "https://github.com/nix-community/tree-sitter-nix")))
+
+
+(use-package dotenv-mode
+  :straight t
+  :mode ("\\.env\\..*\\'" . dotenv-mode)
+  :mode ("\\.env\\'" . dotenv-mode))
+

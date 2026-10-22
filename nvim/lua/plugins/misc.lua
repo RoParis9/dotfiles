@@ -35,11 +35,10 @@ return {
 		opts = { signs = false },
 	},
 	{
-		-- High-performance color highlighter
-		"norcalli/nvim-colorizer.lua",
-		config = function()
-			require("colorizer").setup()
-		end,
+		-- High-performance color highlighter (maintained fork; norcalli's uses deprecated vim.tbl_flatten)
+		"catgoose/nvim-colorizer.lua",
+		event = "BufReadPre",
+		opts = {},
 	},
 	{
 		"vimpostor/vim-tpipeline",

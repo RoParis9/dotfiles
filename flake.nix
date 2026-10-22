@@ -46,22 +46,17 @@
         "aarch64-linux"
       ];
 
-      # Shared Home Manager module factory; avoids duplicating import logic.
-      mkDotfilesHomeModule =
-        {
-          dotfilesSource ? self, # Optional override when importing from another path.
-          ...
-        }:
-        import ./modules/home-manager.nix (dotfilesSource or self);
+      # Shared Home Manager module; `self` is the flake source (pure-eval safe).
+      mkDotfilesHomeModule = import ./modules/home-manager.nix self;
     in
     {
       # ── Home Manager modules ────────────────────────────────────────────────
       # Import one of these in your home-manager `imports` list.
       #
       # Example (inside your NixOS home-manager user block):
-      #   imports = [ inputs.dotfiles.homeModules.default ];
+      #   imports = [ inputs.my-dotfiles.homeModules.default ];
       #   dotfiles.enable = true;
-      #   dotfiles.source = inputs.dotfiles;
+      #   dotfiles.neovim.enable = true;  # LSPs defined in modules/home-manager.nix
       homeModules = {
         # Primary module name; recommended import target.
         default = mkDotfilesHomeModule;
@@ -80,13 +75,14 @@
         }@moduleArgs:
         {
           # Makes `dotfilesSource` available to nested home-manager imports.
-          _module.args.dotfilesSource = dotfilesSource or self;
+          # `dotfilesSource` already defaults to `self` above.
+          _module.args.dotfilesSource = dotfilesSource;
         };
       };
 
       # ── Overlays (optional extension point) ────────────────────────────────
       # Add custom packages here later; empty for now.
-      overlays = [ ];
+      overlays = { };
 
       # ── Packages built from this flake ────────────────────────────────────
       # Useful for `nix build github:RoParis9/dotfiles#<attr>` smoke tests.

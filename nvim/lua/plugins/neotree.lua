@@ -5,7 +5,8 @@ return {
     'nvim-lua/plenary.nvim',
     'nvim-tree/nvim-web-devicons',
     'MunifTanjim/nui.nvim',
-    '3rd/image.nvim', -- Optional image support in preview window: See `# Preview Mode` for more information
+    -- Optional image.nvim omitted: its hererocks/luarocks build loops on NixOS
+    -- and triggers lazy.nvim "Too many rounds of missing plugins".
     {
       's1n7ax/nvim-window-picker',
       version = '2.*',

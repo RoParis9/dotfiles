@@ -1,14 +1,12 @@
 return {
     -- Main LSP Configuration
+    -- Language servers come from the flake (Home Manager), not Mason.
+    -- The enabled set is ~/.local/share/nvim/nix-lsp.lua (generated on rebuild).
+    -- nvim-lspconfig only supplies server defaults; enable via vim.lsp.* (Nvim 0.11+).
     "neovim/nvim-lspconfig",
     dependencies = {
-        -- Automatically install LSPs and related tools to stdpath for Neovim
-        { "williamboman/mason.nvim", config = true }, -- NOTE: Must be loaded before dependants
-        "williamboman/mason-lspconfig.nvim",
-        "WhoIsSethDaniel/mason-tool-installer.nvim",
-
         -- Useful status updates for LSP.
-        { "j-hui/fidget.nvim",       opts = {} },
+        { "j-hui/fidget.nvim", opts = {} },
 
         -- Allows extra capabilities provided by nvim-cmp
         "hrsh7th/cmp-nvim-lsp",
@@ -33,15 +31,13 @@ return {
                 map("<leader>ca", vim.lsp.buf.code_action, "[C]ode [A]ction", { "n", "x" })
                 map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 
-                -- New: Keymap for manual formatting
                 map("<leader>f", function()
                     vim.lsp.buf.format({ async = true })
                 end, "Format document")
 
-                -- New: Auto-format on save (using LSP)
                 local client = vim.lsp.get_client_by_id(event.data.client_id)
-                -- Check if the LSP client supports document formatting
-                if client and client.supports_method("textDocument/formatting") then
+
+                if client and client:supports_method("textDocument/formatting", event.buf) then
                     vim.api.nvim_create_autocmd("BufWritePre", {
                         buffer = event.buf,
                         desc = "Format on save (LSP)",
@@ -51,8 +47,7 @@ return {
                     })
                 end
 
-                -- The following two autocommands are used to highlight references ...
-                if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
+                if client and client:supports_method("textDocument/documentHighlight", event.buf) then
                     local highlight_augroup = vim.api.nvim_create_augroup("kickstart-lsp-highlight", { clear = false })
                     vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
                         buffer = event.buf,
@@ -75,8 +70,7 @@ return {
                     })
                 end
 
-                -- Inlay Hints
-                if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
+                if client and client:supports_method("textDocument/inlayHint", event.buf) then
                     map("<leader>th", function()
                         vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = event.buf }))
                     end, "[T]oggle Inlay [H]ints")
@@ -87,21 +81,21 @@ return {
         local capabilities = vim.lsp.protocol.make_client_capabilities()
         capabilities = vim.tbl_deep_extend("force", capabilities, require("cmp_nvim_lsp").default_capabilities())
 
-        -- Enable the following language servers (already included in your original list)
-        local servers = {
-            clangd = {},        -- C/C++ LSP. Handles formatting (e.g., via clang-format).
-            gopls = {},         -- Go LSP. Handles formatting.
-            rust_analyzer = {}, -- Rust LSP. Handles formatting.
-            ts_ls = {},         -- TypeScript/JavaScript LSP. Handles formatting.
-            ruff = {},
-            html = { filetypes = { "html", "twig", "hbs" } },
-            cssls = {},
-            tailwindcss = {},
-            dockerls = {},
-            sqlls = {},
-            jsonls = {},
-            yamlls = {},
+        -- Default capabilities for all servers (Nix provides binaries on PATH)
+        vim.lsp.config("*", { capabilities = capabilities })
 
+        -- Extra settings only. Which servers to enable comes from the flake
+        -- (~/.local/share/nvim/nix-lsp.lua, written by Home Manager).
+        ---@type table<string, vim.lsp.Config>
+        local extra = {
+            html = { filetypes = { "html", "twig", "hbs" } },
+            nixd = {
+                settings = {
+                    nixd = {
+                        formatting = { command = { "nixfmt" } },
+                    },
+                },
+            },
             lua_ls = {
                 settings = {
                     Lua = {
@@ -115,32 +109,53 @@ return {
                             },
                         },
                         diagnostics = { disable = { "missing-fields" } },
-                        format = { enable = false }, -- Keeping this explicitly disabled if you use Stylua
+                        format = { enable = false },
                     },
                 },
             },
         }
 
-        -- Ensure the servers and tools above are installed
-        require("mason").setup()
+        -- Fallback if Home Manager has not generated the flake list yet.
+        ---@type table<string, vim.lsp.Config>
+        local fallback = {
+            clangd = {},
+            gopls = {},
+            rust_analyzer = {},
+            ts_ls = {},
+            ruff = {},
+            html = {},
+            cssls = {},
+            tailwindcss = {},
+            dockerls = {},
+            sqls = {},
+            jsonls = {},
+            yamlls = {},
+            lua_ls = {},
+            ocamllsp = {},
+            nixd = {},
+        }
 
-        local ensure_installed = vim.tbl_keys(servers or {})
-        vim.list_extend(ensure_installed, {
-            "stylua", -- Keeping Stylua for Lua
-            -- Add formatters for the other languages if you prefer a dedicated tool,
-            -- otherwise the LSPs above handle it. Example: 'gofumpt' or 'clang-format'
-            -- but for pure LSP formatting, no additional tools are strictly needed here.
-        })
-        require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
+        local function load_nix_servers()
+            local path = vim.fn.stdpath("data") .. "/nix-lsp.lua"
+            local ok, servers = pcall(dofile, path)
+            if ok and type(servers) == "table" then
+                return servers
+            end
+            return nil
+        end
 
-        require("mason-lspconfig").setup({
-            handlers = {
-                function(server_name)
-                    local server = servers[server_name] or {}
-                    server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
-                    require("lspconfig")[server_name].setup(server)
-                end,
-            },
-        })
+        local servers = load_nix_servers() or fallback
+
+        for server_name, server in pairs(servers) do
+            local cfg = vim.tbl_deep_extend("force", extra[server_name] or {}, server)
+            vim.lsp.config(server_name, cfg)
+            local merged = vim.lsp.config[server_name]
+            -- Some servers (e.g. rust_analyzer) set cmd as a function, not a list.
+            local cmd = merged and merged.cmd
+            local bin = type(cmd) == "table" and cmd[1] or nil
+            if type(bin) ~= "string" or vim.fn.executable(bin) == 1 then
+                vim.lsp.enable(server_name)
+            end
+        end
     end,
 }

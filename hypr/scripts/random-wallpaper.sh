@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Start awww-daemon if not already running
 pgrep -x awww-daemon > /dev/null || awww-daemon &
